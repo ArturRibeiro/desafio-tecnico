@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../src/Posicao/Posicao.Application/Posicao.Application.csproj" />
+    <ProjectReference Include="../../src/Posicao/Posicao.Infrastructure/Posicao.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

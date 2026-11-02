@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- O SpecFlow cria a cultura da linguagem dos .feature (en-US), que o modo invariante não permite. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../ferramentas/EmissorDeTokens/EmissorDeTokens.csproj" />
+    <ProjectReference Include="../../src/Lancamentos/Lancamentos.Api/Lancamentos.Api.csproj" Aliases="LancamentosApi" />
+    <ProjectReference Include="../../src/Posicao/Posicao.Api/Posicao.Api.csproj" Aliases="PosicaoApi" />
+    <ProjectReference Include="../../src/Posicao/Posicao.Worker/Posicao.Worker.csproj" Aliases="PosicaoWorker" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="SpecFlow.xUnit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+    <PackageReference Include="Testcontainers.Redis" />
+    <PackageReference Include="RabbitMQ.Client" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Cenários em série: eles compartilham os containers, e alguns param o RabbitMQ. -->
+    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="FluentAssertions" />
+  </ItemGroup>
+
+</Project>

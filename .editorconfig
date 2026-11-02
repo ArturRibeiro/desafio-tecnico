@@ -1,0 +1,37 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,props,targets,csproj,slnx,xml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+
+# Regras rebaixadas. Cada uma leva o motivo; rebaixar uma regra é uma decisão, não um atalho.
+
+# CA1515 (tornar tipos internal): os tipos públicos das Apis e Workers precisam ser visíveis para WebApplicationFactory nos testes.
+dotnet_diagnostic.CA1515.severity = none
+
+[tests/**.cs]
+# CA1707 (sem sublinhado em identificadores): nomes de teste usam Metodo_Cenario_Resultado para leitura.
+dotnet_diagnostic.CA1707.severity = none
+# CA2007 (ConfigureAwait): testes não têm SynchronizationContext de UI; ConfigureAwait só polui.
+dotnet_diagnostic.CA2007.severity = none
+
+[src/**/Migracoes/*.cs]
+# Migrações são geradas pelo dotnet-ef e regeneráveis; marcadas como código gerado, ficam fora dos analisadores.
+generated_code = true

@@ -1,0 +1,17 @@
+global using System.Reflection;
+global using System.Text.Json;
+global using System.Text.RegularExpressions;
+global using Contratos.Integracao.Lancamentos;
+global using Lancamentos.Application.Portas;
+global using Lancamentos.Application.UseCases.AbrirConta.Imp.Responses;
+global using Lancamentos.Application.UseCases.AbrirConta.Imp;
+global using Lancamentos.Application.UseCases.Comum.Imp.Responses;
+global using Lancamentos.Application.UseCases.Comum.Imp;
+global using Lancamentos.Application.UseCases.EstornarLancamento.Imp;
+global using Lancamentos.Application.UseCases.RegistrarCredito.Imp;
+global using Lancamentos.Application.UseCases.RegistrarDebito.Imp;
+global using Lancamentos.Domain.Comum;
+global using Lancamentos.Domain.Contas;
+global using Lancamentos.Domain.Lancamentos;
+global using Plataforma.Mediator;
+global using static Lancamentos.Unit.Tests.Dominio.Fabrica;

@@ -1,0 +1,137 @@
+# Ambiente local completo: docker compose up -d --build
+# Só o gateway (porta GATEWAY_PORTA, padrão 8080), o painel do RabbitMQ (15672) e a interface do Jaeger (16686)
+# ficam expostos no host.
+# Credenciais de desenvolvimento: ambiente/desenvolvimento/<container>.env, uma por container,
+# para que cada serviço receba só as credenciais do próprio Bounded Context.
+
+name: desafio-tecnico
+
+x-servico-dotnet: &servico-dotnet
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
+    interval: 5s
+    timeout: 3s
+    retries: 5
+    start_period: 15s
+
+services:
+  postgres-lancamentos:
+    image: postgres:16-alpine
+    env_file: ambiente/desenvolvimento/postgres-lancamentos.env
+    volumes:
+      - postgres-lancamentos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  postgres-posicao:
+    image: postgres:16-alpine
+    env_file: ambiente/desenvolvimento/postgres-posicao.env
+    volumes:
+      - postgres-posicao:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    env_file: ambiente/desenvolvimento/rabbitmq.env
+    ports:
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  lancamentos-api:
+    <<: *servico-dotnet
+    build:
+      context: .
+      dockerfile: src/Lancamentos/Lancamentos.Api/Dockerfile
+    env_file:
+      - ambiente/desenvolvimento/lancamentos-api.env
+      - ambiente/desenvolvimento/autenticacao.env
+      - ambiente/desenvolvimento/observabilidade.env
+    depends_on:
+      postgres-lancamentos:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  posicao-api:
+    <<: *servico-dotnet
+    build:
+      context: .
+      dockerfile: src/Posicao/Posicao.Api/Dockerfile
+    env_file:
+      - ambiente/desenvolvimento/posicao-api.env
+      - ambiente/desenvolvimento/autenticacao.env
+      - ambiente/desenvolvimento/observabilidade.env
+    depends_on:
+      postgres-posicao:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Também executa a reconstrução da posição: docker compose run --rm posicao-worker reconstruir
+  posicao-worker:
+    <<: *servico-dotnet
+    build:
+      context: .
+      dockerfile: src/Posicao/Posicao.Worker/Dockerfile
+    env_file:
+      - ambiente/desenvolvimento/posicao-worker.env
+      - ambiente/desenvolvimento/observabilidade.env
+    depends_on:
+      postgres-posicao:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  gateway:
+    <<: *servico-dotnet
+    build:
+      context: .
+      dockerfile: src/Gateway/Gateway/Dockerfile
+    # O gateway valida o token só para identificar o cliente no limite de requisições.
+    env_file:
+      - ambiente/desenvolvimento/autenticacao.env
+      - ambiente/desenvolvimento/observabilidade.env
+    ports:
+      - "${GATEWAY_PORTA:-8080}:8080"
+    depends_on:
+      - lancamentos-api
+      - posicao-api
+
+  # Visualizador de traces: recebe OTLP (4317) na rede interna; interface em http://localhost:16686.
+  # Os serviços não dependem dele para ficar prontos: fora do ar, só os traces se perdem.
+  jaeger:
+    image: jaegertracing/jaeger:2.21.0
+    ports:
+      - "16686:16686"
+
+  # Ferramenta, fora da subida normal: docker compose run --rm emissor-de-tokens --titular cliente-1
+  emissor-de-tokens:
+    profiles: ["ferramentas"]
+    build:
+      context: .
+      dockerfile: ferramentas/EmissorDeTokens/Dockerfile
+    env_file: ambiente/desenvolvimento/autenticacao.env
+
+volumes:
+  postgres-lancamentos:
+  postgres-posicao:

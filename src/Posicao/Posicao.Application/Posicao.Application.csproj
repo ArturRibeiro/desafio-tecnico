@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Posicao.Domain/Posicao.Domain.csproj" />
+    <ProjectReference Include="../../Compartilhado/Plataforma.Mediator/Plataforma.Mediator.csproj" />
+  </ItemGroup>
+</Project>

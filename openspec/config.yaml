@@ -1,0 +1,65 @@
+schema: spec-driven
+
+# Project context (optional)
+# Add only constraints that should guide OpenSpec artifacts and workflows.
+# Include constraints an agent cannot infer by reading the code.
+# Keep general project documentation and discoverable codebase facts out.
+# Example:
+#   context: |
+#     Designs and tasks must cover Windows, macOS, and Linux
+#     Write all artifacts in Spanish
+context: |
+  Stack:
+  - C# 14 / .NET 10, ASP.NET Core Minimal API e Worker Service.
+  - Microserviços por Bounded Context (DDD): Lançamentos, Posição Consolidada e API Gateway (YARP 2.3).
+  - PostgreSQL 16 com EF Core 10 (Npgsql), um banco por Bounded Context.
+  - Mensageria: RabbitMQ 3.13 com MassTransit 8 (Outbox e Inbox no EF Core). MassTransit fica na v8, porque a v9 tem licença comercial.
+  - Cache: Redis 7 (StackExchange.Redis), opcional para o funcionamento.
+  - Autenticação: JWT Bearer, com escopos lancamentos:escrever e posicao:ler.
+  - Observabilidade: logs JSON (console) e traces OpenTelemetry via OTLP; Jaeger no ambiente local.
+  - Testes: xUnit v3, NetArchTest para regras de arquitetura, FluentAssertions 7 nas asserções (a v8 tem licença comercial) e SpecFlow (Gherkin) com xUnit v2 e Testcontainers para os cenários das specs de negócio.
+  - Ambiente local: Docker Compose; CI no GitHub Actions.
+  - Pacotes com versão central (Directory.Packages.props); todo warning é erro.
+  Convenções:
+  - Documentação e código em português, sem acentos nos identificadores; termos de DDD em inglês.
+  - Projetos de cada Bounded Context nomeados por camada em inglês: <Contexto>.Domain, <Contexto>.Application, <Contexto>.Infrastructure e <Contexto>.Api.
+  - Projetos de teste nomeados pelo tipo: <Area>.Unit.Tests, Architecture.Tests e Scenarios.Integration.Specs.Tests (executa os cenários das specs de negócio com os serviços e a infraestrutura reais). Não há outros projetos de teste de integração.
+  - Uma spec é de negócio quando tem um .feature em tests/Scenarios.Integration.Specs.Tests/Features (nome da spec em PascalCase: consulta-de-posicao → ConsultaDePosicao.feature); as técnicas não têm.
+  - No Scenarios.Integration.Specs.Tests, as classes de passos (bindings Given/When/Then do SpecFlow) ficam na pasta Steps, com o sufixo Step (ContasStep, ComunsStep).
+  - Todo using deve esta adicionado em um arquivo chamado Usings.cs
+  - Casos de uso da Application expostos pelo Mediator próprio, único para todos os contextos (src/Compartilhado/Plataforma.Mediator, sem dependências; registrado na borda por AdicionarMediator da Plataforma.Hospedagem): cada pedido implementa IRequest<T>, se chama <Acao>Command (altera estado) ou <Acao>Query (só lê) e tem um único IRequestHandler, com o sufixo Handler (AbrirContaCommand → AbrirContaHandler); Api e Worker usam só o IMediator.
+  - Na *.Application, os casos de uso ficam em UseCases/<Feature>/: na raiz, as abstrações (interfaces do caso de uso); em Imp/, as implementações concretas, com o handler e o Command ou Query que ele trata na mesma pasta. As respostas da API (classes e records devolvidos pelos endpoints) ficam em UseCases/<Feature>/Imp/Responses/, com o sufixo Response, e são o que o handler devolve. O que é compartilhado entre features fica em UseCases/Comum/ com a mesma divisão.
+  - Um tipo por arquivo (classe, record, struct, enum ou interface), com o arquivo nomeado pelo tipo; tipo genérico usa Nome{T}.cs ou Nome{TRequest,TResponse}.cs. Vale para src/, tests/ e ferramentas/; só tipos aninhados e as migrações geradas pelo EF Core ficam de fora.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+rules:
+  specs:
+    - Requisitos devem utilizar "DEVE" (deve/deverá).
+    - Cenários devem utilizar a estrutura Given/When/Then.
+    - Mantenha os detalhes de implementação no projeto, não nas especificações.
+    - Seja objetivo e pouco verboso; um comportamento por requisito, com a descrição em até 3 frases.
+    - Cenários cobrem só o que muda o resultado (caminho feliz, erros, limites); não repita o mesmo caso com outros dados.
+    - Nas specs de negócio, os cenários usam linguagem de negócio (valores em reais como R$ 1.000,00, datas como 27/10/2026, motivo da recusa em palavras), sem rotas, status, campos, cabeçalhos ou nomes de infraestrutura; o contrato técnico fica no texto do requisito.
+  proposal:
+    - Mantenha as propostas com menos de 500 palavras.
+    - Sempre indique o que está fora do escopo.
+    - Seja objetivo e pouco verboso; prefira itens de uma linha a parágrafos.
+    - Não repita a mesma informação entre seções; nomes de arquivos, pacotes, variáveis e códigos HTTP ficam no design e nas specs.
+  tasks:
+    - As tarefas devem ter um escopo adequado para implementação e ser verificáveis.
+    - Uma change que cria ou altera cenários de uma spec de negócio tem tarefa para criar ou atualizar o .feature dessa spec (uma Rule por requisito, com o texto do requisito como descrição, e um Scenario por cenário, com os passos iguais aos da spec) e os passos em Steps.
+    - Divida as tarefas em partes de, no máximo, 2 horas.
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+operations:
+  archive:
+    guidance:
+      - Resuma o resultado do arquivamento antes de finalizar.

@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/.vs/
+.git/
+.claude/
+tests/
+openspec/
+diagramas/
+ambiente/
+*.md

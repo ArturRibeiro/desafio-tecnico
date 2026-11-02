@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../src/Lancamentos/Lancamentos.Application/Lancamentos.Application.csproj" />
+    <ProjectReference Include="../../src/Compartilhado/Contratos.Integracao/Contratos.Integracao.csproj" />
+  </ItemGroup>
+</Project>

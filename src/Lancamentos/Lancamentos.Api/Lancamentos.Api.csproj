@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="../Lancamentos.Infrastructure/Lancamentos.Infrastructure.csproj" />
+    <ProjectReference Include="../Lancamentos.Application/Lancamentos.Application.csproj" />
+    <ProjectReference Include="../../Compartilhado/Contratos.Integracao/Contratos.Integracao.csproj" />
+    <ProjectReference Include="../../Compartilhado/Plataforma.Hospedagem/Plataforma.Hospedagem.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MassTransit.RabbitMQ" />
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+  </ItemGroup>
+</Project>

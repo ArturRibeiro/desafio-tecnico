@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../src/Compartilhado/Contratos.Integracao/Contratos.Integracao.csproj" />
+    <ProjectReference Include="../../src/Compartilhado/Plataforma.Hospedagem/Plataforma.Hospedagem.csproj" />
+    <ProjectReference Include="../../src/Gateway/Gateway/Gateway.csproj" />
+    <ProjectReference Include="../../src/Lancamentos/Lancamentos.Domain/Lancamentos.Domain.csproj" />
+    <ProjectReference Include="../../src/Lancamentos/Lancamentos.Application/Lancamentos.Application.csproj" />
+    <ProjectReference Include="../../src/Lancamentos/Lancamentos.Infrastructure/Lancamentos.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Lancamentos/Lancamentos.Api/Lancamentos.Api.csproj" />
+    <ProjectReference Include="../../src/Posicao/Posicao.Domain/Posicao.Domain.csproj" />
+    <ProjectReference Include="../../src/Posicao/Posicao.Application/Posicao.Application.csproj" />
+    <ProjectReference Include="../../src/Posicao/Posicao.Infrastructure/Posicao.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Posicao/Posicao.Api/Posicao.Api.csproj" />
+    <ProjectReference Include="../../src/Posicao/Posicao.Worker/Posicao.Worker.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+</Project>

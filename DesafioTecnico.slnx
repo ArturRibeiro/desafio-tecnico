@@ -1,0 +1,34 @@
+<Solution>
+  <Folder Name="/ferramentas/">
+    <Project Path="ferramentas/EmissorDeTokens/EmissorDeTokens.csproj" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Compartilhado/">
+    <Project Path="src/Compartilhado/Contratos.Integracao/Contratos.Integracao.csproj" />
+    <Project Path="src/Compartilhado/Plataforma.Hospedagem/Plataforma.Hospedagem.csproj" />
+    <Project Path="src/Compartilhado/Plataforma.Mediator/Plataforma.Mediator.csproj" />
+  </Folder>
+  <Folder Name="/src/Gateway/">
+    <Project Path="src/Gateway/Gateway/Gateway.csproj" />
+  </Folder>
+  <Folder Name="/src/Lancamentos/">
+    <Project Path="src/Lancamentos/Lancamentos.Api/Lancamentos.Api.csproj" />
+    <Project Path="src/Lancamentos/Lancamentos.Application/Lancamentos.Application.csproj" />
+    <Project Path="src/Lancamentos/Lancamentos.Domain/Lancamentos.Domain.csproj" />
+    <Project Path="src/Lancamentos/Lancamentos.Infrastructure/Lancamentos.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Posicao/">
+    <Project Path="src/Posicao/Posicao.Api/Posicao.Api.csproj" />
+    <Project Path="src/Posicao/Posicao.Application/Posicao.Application.csproj" />
+    <Project Path="src/Posicao/Posicao.Domain/Posicao.Domain.csproj" />
+    <Project Path="src/Posicao/Posicao.Infrastructure/Posicao.Infrastructure.csproj" />
+    <Project Path="src/Posicao/Posicao.Worker/Posicao.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Architecture.Tests/Architecture.Tests.csproj" />
+    <Project Path="tests/Lancamentos.Unit.Tests/Lancamentos.Unit.Tests.csproj" />
+    <Project Path="tests/Plataforma.Mediator.Unit.Tests/Plataforma.Mediator.Unit.Tests.csproj" />
+    <Project Path="tests/Posicao.Unit.Tests/Posicao.Unit.Tests.csproj" />
+    <Project Path="tests/Scenarios.Integration.Specs.Tests/Scenarios.Integration.Specs.Tests.csproj" />
+  </Folder>
+</Solution>

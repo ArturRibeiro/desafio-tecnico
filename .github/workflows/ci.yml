@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-e-testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Warnings já falham a compilação (TreatWarningsAsErrors no Directory.Build.props).
+      - name: Compilar
+        run: dotnet build -c Release
+
+      # O Scenarios.Integration.Specs.Tests usa Testcontainers; o Docker já vem instalado no runner.
+      - name: Testar
+        run: dotnet test -c Release --no-build
+
+      - name: Validar docker-compose.yml
+        run: docker compose config --quiet

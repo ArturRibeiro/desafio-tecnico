@@ -1,0 +1,17 @@
+global using Contratos.Integracao.Lancamentos;
+global using MassTransit;
+global using Plataforma.Hospedagem;
+global using Plataforma.Mediator;
+global using Posicao.Application.UseCases.Comum.Imp.Responses;
+global using Posicao.Application.UseCases.Comum.Imp;
+global using Posicao.Application.UseCases.Comum;
+global using Posicao.Application.UseCases.ObterFechamentosDiarios.Imp.Responses;
+global using Posicao.Application.UseCases.ObterFechamentosDiarios.Imp;
+global using Posicao.Application.UseCases.ObterPosicaoEm.Imp.Responses;
+global using Posicao.Application.UseCases.ObterPosicaoEm.Imp;
+global using Posicao.Application.UseCases.ProjetarAbertura.Imp;
+global using Posicao.Application.UseCases.ProjetarMovimentacao.Imp;
+global using Posicao.Application.UseCases.ReconstruirPosicao.Imp;
+global using Posicao.Infrastructure.Eventos;
+global using Posicao.Infrastructure;
+global using Posicao.Worker;

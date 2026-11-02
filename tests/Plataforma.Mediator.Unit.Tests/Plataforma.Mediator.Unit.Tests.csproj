@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../src/Compartilhado/Plataforma.Mediator/Plataforma.Mediator.csproj" />
+  </ItemGroup>
+</Project>
