@@ -339,4 +339,65 @@ public sealed class ProjecaoDaPosicaoStep(SpecScenarioContext contexto)
 
     [Then(@"^os fechamentos não mudam$")]
     public async Task FechamentosIguais() => (await FechamentosAsync(Hoje, Hoje)).Should().Be((string)contexto.Memoria["fechamentos reconstruídos"]);
+
+    // Conciliação com o saldo de Lançamentos
+
+    [Given(@"^a conta C com saldo de R\$ 100,00 na Posição Consolidada$")]
+    public async Task ContaComCem()
+    {
+        var conta = await ContaSinteticaAsync();
+        await contexto.PublicarAsync("MovimentacaoRegistradaV1", EventosSinteticos.Movimentacao(conta, 1, "Credito", 100m, Agora, saldoDisponivelApos: 100m));
+        await contexto.EsperarProjecaoAsync(conta, 1);
+    }
+
+    [When(@"^chega um (crédito|débito) de (R\$ [\d.]+,\d{2}) em que Lançamentos informa saldo de (R\$ [\d.]+,\d{2}) após a movimentação$")]
+    public async Task ChegaComSaldoInformado(string tipo, string valor, string saldo) =>
+        await ChegaSegundaMovimentacaoAsync(tipo, Linguagem.Reais(valor), Linguagem.Reais(saldo));
+
+    [When(@"^chega um (crédito|débito) de (R\$ [\d.]+,\d{2}) sem o saldo informado por Lançamentos$")]
+    public async Task ChegaSemSaldoInformado(string tipo, string valor) =>
+        await ChegaSegundaMovimentacaoAsync(tipo, Linguagem.Reais(valor), null);
+
+    [Then(@"^o saldo de C passa a (R\$ [\d.]+,\d{2})$")]
+    public async Task SaldoPassaA(string saldo) => (await SaldoNaPosicaoAsync()).Should().Be(Linguagem.Reais(saldo));
+
+    [Then(@"^nenhuma divergência é registrada$")]
+    public void NenhumaDivergencia() => contexto.Divergencias.Registradas.Should().BeEmpty();
+
+    [Then(@"^a divergência é registrada para análise, identificando a conta C e o lançamento$")]
+    public void DivergenciaRegistrada() =>
+        contexto.Divergencias.Registradas.Should().Equal(new DivergenciasDeSaldo.Registrada(Conta, 2, (string)contexto.Memoria["lançamento"]));
+
+    [Then(@"^as movimentações seguintes de C continuam sendo aplicadas$")]
+    public async Task SeguintesAplicadas()
+    {
+        await contexto.PublicarAsync("MovimentacaoRegistradaV1", EventosSinteticos.Movimentacao(Conta, 3, "Credito", 5m, Agora));
+        await contexto.EsperarProjecaoAsync(Conta, 3);
+    }
+
+    [Given(@"^a conta C com uma movimentação recebida com saldo divergente$")]
+    public async Task MovimentacaoDivergenteRecebida()
+    {
+        var conta = await ContaSinteticaAsync();
+        var lancamento = Guid.NewGuid().ToString();
+        contexto.Memoria["lançamento"] = lancamento;
+        await contexto.PublicarAsync("MovimentacaoRegistradaV1", EventosSinteticos.Movimentacao(conta, 1, "Credito", 100m, Agora, lancamento, saldoDisponivelApos: 90m));
+        await contexto.EsperarProjecaoAsync(conta, 1);
+        contexto.Divergencias.Registradas.Should().ContainSingle();
+        contexto.Divergencias.Limpar();
+    }
+
+    [Then(@"^a divergência é registrada de novo, identificando a conta C e o lançamento$")]
+    public void DivergenciaRegistradaDeNovo() =>
+        contexto.Divergencias.Registradas.Should().Equal(new DivergenciasDeSaldo.Registrada(Conta, 1, (string)contexto.Memoria["lançamento"]));
+
+    /// <summary>Publica a sequência 2 da conta, com ou sem o saldo informado por Lançamentos, e espera a aplicação.</summary>
+    private async Task ChegaSegundaMovimentacaoAsync(string tipo, decimal valor, decimal? saldo)
+    {
+        var lancamento = Guid.NewGuid().ToString();
+        contexto.Memoria["lançamento"] = lancamento;
+        var contrato = tipo == "crédito" ? "Credito" : "Debito";
+        await contexto.PublicarAsync("MovimentacaoRegistradaV1", EventosSinteticos.Movimentacao(Conta, 2, contrato, valor, Agora, lancamento, saldoDisponivelApos: saldo));
+        await contexto.EsperarProjecaoAsync(Conta, 2);
+    }
 }

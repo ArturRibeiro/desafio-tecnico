@@ -53,7 +53,8 @@ public static class TradutorDeEventos
             valor.Valor,
             evento.DataCompetencia,
             evento.DataRegistro,
-            evento.LancamentoEstornadoId is { } estornado ? new LancamentoId(estornado) : null);
+            evento.LancamentoEstornadoId is { } estornado ? new LancamentoId(estornado) : null,
+            evento.SaldoDisponivelApos);
         return movimento.Falha is { } falha
             ? throw new EventoInvalidoException($"MovimentacaoRegistrada {evento.EventoId}: {falha.Mensagem}")
             : movimento.Valor;

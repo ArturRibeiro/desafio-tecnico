@@ -1,7 +1,13 @@
 namespace Posicao.Application.UseCases.Comum.Imp;
 
-/// <summary>Carrega os pendentes e os originais dos estornos e chama o <see cref="ProjecaoDaConta"/>.</summary>
-public sealed class AplicacaoDePendentes(IRepositorioDeMovimentos movimentos, IRepositorioDeFechamentos fechamentos)
+/// <summary>
+/// Carrega os pendentes e os originais dos estornos, chama o <see cref="ProjecaoDaConta"/> e registra as divergências
+/// de saldo que ele apontar.
+/// </summary>
+public sealed class AplicacaoDePendentes(
+    IRepositorioDeMovimentos movimentos,
+    IRepositorioDeFechamentos fechamentos,
+    IRegistroDeDivergencias divergencias)
 {
     /// <param name="novo">Movimento recém-adicionado nesta transação, que a consulta ao banco ainda não enxerga.</param>
     public async Task<ResumoDaProjecao> AplicarAsync(Titularidade titularidade, Movimento? novo, CancellationToken cancelamento)
@@ -28,6 +34,11 @@ public sealed class AplicacaoDePendentes(IRepositorioDeMovimentos movimentos, IR
         foreach (var fechamento in resultado.NovosFechamentos)
         {
             fechamentos.Adicionar(fechamento);
+        }
+
+        foreach (var divergencia in resultado.Divergencias)
+        {
+            divergencias.Registrar(divergencia);
         }
 
         return new ResumoDaProjecao(JaRecebido: false, resultado.Aplicados.Count, resultado.Interrupcao);

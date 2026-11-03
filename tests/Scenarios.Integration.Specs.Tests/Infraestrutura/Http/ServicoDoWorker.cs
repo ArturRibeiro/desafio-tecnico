@@ -4,9 +4,10 @@ namespace Scenarios.Integration.Specs.Tests.Infraestrutura.Http;
 
 /// <summary>
 /// Posicao.Worker no processo, com o banco e o virtual host do cenário, consumindo das filas com o
-/// <paramref name="prefixoDasFilas"/> do cenário, e o relógio do cenário.
+/// <paramref name="prefixoDasFilas"/> do cenário, o relógio do cenário e a captura das divergências de saldo.
 /// </summary>
-public sealed class ServicoDoWorker(string banco, string virtualHost, string redis, string prefixoDasFilas, TimeProvider relogio)
+public sealed class ServicoDoWorker(
+    string banco, string virtualHost, string redis, string prefixoDasFilas, TimeProvider relogio, DivergenciasDeSaldo divergencias)
     : WebApplicationFactory<PosicaoWorker::Program>
 {
     /// <summary>O mesmo que o comando "reconstruir" do Posicao.Worker faz, pelo Mediator do Worker.</summary>
@@ -30,6 +31,10 @@ public sealed class ServicoDoWorker(string banco, string virtualHost, string red
         builder.UseSetting("Consumo:IntervaloMinimo", "00:00:00.200");
         builder.UseSetting("Consumo:IntervaloMaximo", "00:00:01");
         builder.UseSetting("Logging:LogLevel:Default", "Warning");
-        builder.ConfigureTestServices(servicos => servicos.AddSingleton(relogio));
+        builder.ConfigureTestServices(servicos =>
+        {
+            servicos.AddSingleton(relogio);
+            servicos.AddSingleton<ILoggerProvider>(divergencias);
+        });
     }
 }

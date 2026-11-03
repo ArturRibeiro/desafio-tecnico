@@ -13,6 +13,8 @@ public static class ServicosDeInfraestrutura
         servicos.AddSingleton(TimeProvider.System);
 
         servicos.AddScoped<AplicacaoDePendentes>();
+        servicos.AddMetrics();
+        servicos.AddSingleton<IRegistroDeDivergencias, RegistroDeDivergenciasEmLog>();
 
         servicos.Configure<OpcoesDeBanco>(secaoBanco);
         return servicos;

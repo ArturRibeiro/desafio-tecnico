@@ -283,6 +283,11 @@ namespace Posicao.Infrastructure.Migracoes
                         .HasColumnType("uuid")
                         .HasColumnName("lancamento_id");
 
+                    b.Property<decimal?>("SaldoInformadoApos")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)")
+                        .HasColumnName("saldo_informado_apos");
+
                     b.Property<string>("Tipo")
                         .IsRequired()
                         .HasMaxLength(20)

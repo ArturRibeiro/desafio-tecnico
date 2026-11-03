@@ -22,6 +22,7 @@ public static class ProjecaoDaConta
         var porLancamento = originais.Where(m => m.Efeito is not null).ToDictionary(m => m.LancamentoId);
         var aplicados = new List<Movimento>();
         var novos = new List<FechamentoDiario>();
+        var divergencias = new List<Divergencia>();
         var atual = ultimoFechamento;
 
         var ordenados = pendentes
@@ -38,7 +39,7 @@ public static class ProjecaoDaConta
             var dia = DataFechamento.De(movimento.DataCompetencia);
             if (atual is not null && dia < atual.Data)
             {
-                return new(aplicados, novos, new Falha(
+                return Interrompido(aplicados, novos, divergencias, new Falha(
                     CodigosDeFalha.CompetenciaForaDeOrdem,
                     $"A sequência {movimento.Sequencia} tem competência em {dia}, antes do último fechamento ({atual.Data})."));
             }
@@ -46,7 +47,7 @@ public static class ProjecaoDaConta
             var efeito = EfeitoDe(movimento, porLancamento);
             if (efeito is null)
             {
-                return new(aplicados, novos, new Falha(
+                return Interrompido(aplicados, novos, divergencias, new Falha(
                     CodigosDeFalha.EstornoSemOriginal,
                     $"O estorno de sequência {movimento.Sequencia} anula um lançamento que não foi aplicado."));
             }
@@ -59,12 +60,17 @@ public static class ProjecaoDaConta
             }
 
             atual.Aplicar(movimento);
+            if (movimento.SaldoInformadoApos is { } informado && informado != atual.SaldoFechamento)
+            {
+                divergencias.Add(new Divergencia(movimento.ContaId, movimento.Sequencia, movimento.LancamentoId));
+            }
+
             titularidade.Avancar(movimento);
             porLancamento[movimento.LancamentoId] = movimento;
             aplicados.Add(movimento);
         }
 
-        return new(aplicados, novos, null);
+        return new(aplicados, novos, null, divergencias);
     }
 
     /// <summary>
@@ -84,6 +90,10 @@ public static class ProjecaoDaConta
 
         return Aplicar(titularidade, null, todos, []);
     }
+
+    private static ResultadoDaProjecao Interrompido(
+        List<Movimento> aplicados, List<FechamentoDiario> novos, List<Divergencia> divergencias, Falha motivo) =>
+        new(aplicados, novos, motivo, divergencias);
 
     private static Efeito? EfeitoDe(Movimento movimento, Dictionary<LancamentoId, Movimento> porLancamento) => movimento.Tipo switch
     {

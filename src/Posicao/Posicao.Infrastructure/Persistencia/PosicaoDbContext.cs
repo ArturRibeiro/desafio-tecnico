@@ -46,6 +46,7 @@ public sealed class PosicaoDbContext(DbContextOptions<PosicaoDbContext> opcoes) 
         movimento.Property(m => m.DataCompetencia).HasColumnName("data_competencia");
         movimento.Property(m => m.DataRegistro).HasColumnName("data_registro");
         movimento.Property(m => m.LancamentoEstornadoId).HasColumnName("lancamento_estornado_id").HasConversion(Conversores.LancamentoIdOpcional);
+        movimento.Property(m => m.SaldoInformadoApos).HasColumnName("saldo_informado_apos").HasPrecision(14, 2);
         movimento.Property(m => m.Efeito).HasColumnName("efeito").HasConversion<string>().HasMaxLength(20);
 
         // Sem chave estrangeira para titularidades: o movimento pode chegar antes da abertura e ficar pendente.

@@ -10,7 +10,7 @@ public sealed class EventosDeIntegracaoStep(SpecScenarioContext contexto)
     private static readonly string[] CamposDeContaAberta = ["tipoEvento", "versao", "eventoId", "contaId", "titularId", "sequencia", "moeda", "dataAbertura", "correlacaoId"];
 
     private static readonly string[] CamposDeMovimentacao =
-        ["tipoEvento", "versao", "eventoId", "contaId", "lancamentoId", "sequencia", "tipo", "valor", "moeda", "dataCompetencia", "dataRegistro", "lancamentoEstornadoId", "correlacaoId"];
+        ["tipoEvento", "versao", "eventoId", "contaId", "lancamentoId", "sequencia", "tipo", "valor", "moeda", "dataCompetencia", "dataRegistro", "lancamentoEstornadoId", "saldoDisponivelApos", "correlacaoId"];
 
     private string Conta => (string)contexto.Memoria["conta"];
 
@@ -61,7 +61,7 @@ public sealed class EventosDeIntegracaoStep(SpecScenarioContext contexto)
         await contexto.DebitarAsync(conta, 10m);
     }
 
-    [Then(@"^Lançamentos avisa a movimentação: débito de R\$ 30,00, terceiro lançamento da conta, sem lançamento estornado$")]
+    [Then(@"^Lançamentos avisa a movimentação: débito de R\$ 30,00, terceiro lançamento da conta, sem lançamento estornado e com saldo de R\$ 70,00 após a movimentação$")]
     public async Task DebitoPublicado()
     {
         var evento = await EventoAsync("MovimentacaoRegistradaV1", e => e.Texto("sequencia") == "3", "movimentação da sequência 3");
@@ -70,6 +70,7 @@ public sealed class EventosDeIntegracaoStep(SpecScenarioContext contexto)
         // O MassTransit serializa decimal como texto, sem perder as casas.
         (decimal.Parse(evento.Texto("valor"), CultureInfo.InvariantCulture)).Should().Be(30.00m);
         evento.Mensagem.GetProperty("lancamentoEstornadoId").ValueKind.Should().Be(JsonValueKind.Null);
+        (decimal.Parse(evento.Texto("saldoDisponivelApos"), CultureInfo.InvariantCulture)).Should().Be(70.00m);
     }
 
     [Then(@"^Lançamentos avisa a movimentação como estorno, indicando o débito estornado$")]

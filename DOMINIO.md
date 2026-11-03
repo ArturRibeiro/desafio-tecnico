@@ -302,6 +302,20 @@ Uma conta recém-aberta cuja `ContaAberta v1` ainda não foi processada também 
 
 Posição Consolidada **não consulta** Lançamentos para saber o titular: isso criaria uma dependência síncrona entre os contextos, que a arquitetura evita.
 
+### 6.8 Conciliação com Lançamentos
+
+O saldo de cada conta é calculado nos dois contextos: em Lançamentos, para autorizar débitos (`SaldoDisponivel`), e aqui, para a posição. A consistência eventual garante que a Posição alcança Lançamentos, mas não que os dois cálculos concordam. Um defeito no cálculo da projeção, por exemplo, convergiria para o valor errado sem nenhum aviso.
+
+Por isso cada `MovimentacaoRegistrada v1` traz o `saldoDisponivelApos`, o saldo que Lançamentos calculou logo após a movimentação, e o `Movimento` o guarda como `SaldoInformadoApos`. Ao aplicar o movimento, o `ProjecaoDaConta` compara esse valor com o saldo calculado depois da mesma sequência:
+
+1. A comparação é **por sequência**, nunca "no momento atual": o atraso normal da consistência eventual não gera alarme falso.
+2. Uma diferença vira uma `Divergencia` (conta, sequência e lançamento), registrada como log de erro com o código `saldo-divergente` e contada na métrica `posicao.conciliacao.divergencias`. Os valores ficam fora do log.
+3. A divergência **não bloqueia** a projeção nem altera o saldo calculado: o saldo informado serve só para conferir. A correção continua sendo corrigir o defeito e reconstruir (6.6).
+4. A reconstrução concilia de novo, o que permite confirmar a correção.
+5. Movimentos recebidos sem o campo (publicados antes dele) são aplicados sem comparação.
+
+Depois de uma divergência, as sequências seguintes da conta também divergem, porque a diferença se propaga no saldo; a primeira sequência apontada indica a origem.
+
 ---
 
 ## 7. Contrato de integração
@@ -340,9 +354,12 @@ Definido no projeto de contratos, versionado e **compatível com versões anteri
   "dataCompetencia": "2026-10-27T14:32:10Z",
   "dataRegistro": "2026-10-27T14:32:10.512Z",
   "lancamentoEstornadoId": null,
+  "saldoDisponivelApos": "350.00",
   "correlacaoId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
 }
 ```
+
+O `saldoDisponivelApos` é o saldo disponível da conta logo após a movimentação, usado pela Posição Consolidada para conciliar o saldo que calcula ([6.8](#68-conciliação-com-lançamentos)). É opcional: avisos publicados antes dele não o trazem, e a versão continua a 1.
 
 Valores monetários trafegam como **texto decimal** (`"150.00"`), o padrão do serializador do MassTransit: nenhum consumidor precisa converter para ponto flutuante, o que arredondaria valores grandes em linguagens que só têm `double`. Os contratos aceitam ler número ou texto.
 
@@ -370,6 +387,7 @@ O `TitularId` é um identificador pseudônimo: sozinho não identifica a pessoa,
 | Entrega do Outbox dentro da `Lancamentos.Api` | Container `Lancamentos.Worker` só para publicar | A requisição já não depende do broker (só grava no banco) e o MassTransit faz o lock entre instâncias. Um container a menos; mover a entrega para um Worker é só configuração. |
 | Consumer em `Posicao.Worker` separado da `Posicao.Api` | Consumer hospedado na própria API | Consumo e consultas escalam e falham de forma independente. |
 | MassTransit **v8** (Apache 2.0) | v9 (licença comercial), Wolverine, Rebus | Open source e suficiente para o desafio. Em produção, avaliar o custo da licença da v9 ou migrar para uma alternativa. |
+| Conciliação por sequência, com o `saldoDisponivelApos` no próprio evento | Rotina periódica comparando os bancos dos dois contextos; evento separado de "saldo conferido" | Detecta a divergência na movimentação que a causou, sem chamada síncrona, sem um contexto ler o banco do outro e sem falsos alarmes da consistência eventual. O saldo no evento não é dado novo para a Posição, que já o calcula. |
 | `TitularId` na `Conta` e titularidade projetada em Posição via `ContaAberta v1` | Posição consultar Lançamentos a cada requisição; `titularId` em toda `MovimentacaoRegistrada`; claim com a lista de contas no token | Sem dependência síncrona entre os contextos e com o mínimo de dado pessoal trafegando. Uma lista de contas no token ficaria desatualizada e aumentaria o token. |
 | Domínio e código em português | Código em inglês | Mantém a Ubiquitous Language idêntica entre negócio, documentação e código, sem tradução mental. |
 

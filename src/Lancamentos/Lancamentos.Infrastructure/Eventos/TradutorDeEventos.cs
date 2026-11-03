@@ -37,6 +37,7 @@ public static class TradutorDeEventos
             DataCompetencia = lancamento.DataCompetencia,
             DataRegistro = lancamento.DataRegistro,
             LancamentoEstornadoId = lancamento.LancamentoEstornadoId?.Valor,
+            SaldoDisponivelApos = lancamento.SaldoDisponivelApos,
             CorrelacaoId = correlacaoId,
         };
     }

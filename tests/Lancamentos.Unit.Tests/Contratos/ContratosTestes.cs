@@ -43,6 +43,7 @@ public sealed partial class ContratosTestes
             Moeda = "BRL",
             DataCompetencia = DateTimeOffset.UtcNow,
             DataRegistro = DateTimeOffset.UtcNow,
+            SaldoDisponivelApos = 70.00m,
             CorrelacaoId = "c-1",
         };
 
@@ -50,6 +51,7 @@ public sealed partial class ContratosTestes
         var campos = Campos(json);
 
         campos.Should().Equal(CamposDocumentados("MovimentacaoRegistrada"));
+        json.RootElement.GetProperty("saldoDisponivelApos").GetDecimal().Should().Be(70.00m);
         campos.Should().NotContain("titularId");
         campos.Should().NotContain("descricao");
     }

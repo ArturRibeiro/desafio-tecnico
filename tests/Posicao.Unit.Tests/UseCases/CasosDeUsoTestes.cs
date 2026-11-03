@@ -9,9 +9,10 @@ public sealed class CasosDeUsoTestes
 
     private readonly Memoria memoria = new();
     private readonly CacheFalso cache = new();
+    private readonly DivergenciasRegistradas divergencias = new();
     private readonly ContaId conta = Fabrica.NovaConta();
 
-    private AplicacaoDePendentes Pendentes => new(memoria, memoria);
+    private AplicacaoDePendentes Pendentes => new(memoria, memoria, divergencias);
 
     [Fact(DisplayName = "Movimento recebido antes da abertura fica pendente e é aplicado na abertura")]
     public async Task Movimento_AntesDaAbertura_FicaPendenteEEAplicadoNaAbertura()
@@ -270,7 +271,35 @@ public sealed class CasosDeUsoTestes
         Instantaneo().Should().Equal(depoisDaPrimeira);
     }
 
-    private ReconstruirPosicaoHandler Reconstruir() => new(memoria, memoria, memoria, memoria, cache);
+    [Fact(DisplayName = "Projeção registra a divergência de saldo e segue aplicando")]
+    public async Task Projecao_RegistraADivergencia_ESegueAplicando()
+    {
+        await AbrirAsync();
+        await MovimentarAsync(Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(10), saldoInformado: 100m));
+        var debito = Fabrica.Debito(conta, 2, 30m, Dia1.AddHours(11), saldoInformado: 50m);
+
+        var resumo = await MovimentarAsync(debito);
+
+        resumo.Aplicados.Should().Be(1);
+        memoria.Fechamentos.Single().SaldoFechamento.Should().Be(70.00m);
+        divergencias.Registradas.Should().Equal(new Divergencia(conta, 2, debito.LancamentoId));
+    }
+
+    [Fact(DisplayName = "Reconstrução registra de novo as divergências de saldo")]
+    public async Task Reconstrucao_RegistraDeNovoAsDivergencias()
+    {
+        await AbrirAsync();
+        var debito = Fabrica.Debito(conta, 1, 30m, Dia1.AddHours(11), saldoInformado: 0m);
+        memoria.Movimentos.Add(debito);
+        await MovimentarAsync(Fabrica.Credito(conta, 2, 10m, Dia1.AddHours(12)));
+        divergencias.Registradas.Clear();
+
+        await Reconstruir().HandleAsync(new ReconstruirPosicaoCommand(), Ct);
+
+        divergencias.Registradas.Should().Equal(new Divergencia(conta, 1, debito.LancamentoId));
+    }
+
+    private ReconstruirPosicaoHandler Reconstruir() => new(memoria, memoria, memoria, memoria, cache, divergencias);
 
     private List<(DateOnly, decimal, decimal, decimal, decimal)> Instantaneo() =>
         memoria.Fechamentos.OrderBy(f => f.Data).Select(f => (f.Data.Valor, f.SaldoAbertura, f.TotalCreditos, f.TotalDebitos, f.SaldoFechamento)).ToList();

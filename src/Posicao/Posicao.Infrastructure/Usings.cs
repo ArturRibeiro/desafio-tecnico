@@ -1,4 +1,5 @@
 global using System.Data;
+global using System.Diagnostics.Metrics;
 global using System.Globalization;
 global using System;
 global using Contratos.Integracao.Lancamentos;
@@ -32,5 +33,6 @@ global using Posicao.Domain.Contas;
 global using Posicao.Domain.Fechamentos;
 global using Posicao.Domain.Movimentos;
 global using Posicao.Infrastructure.Cache;
+global using Posicao.Infrastructure.Conciliacao;
 global using Posicao.Infrastructure.Persistencia;
 global using StackExchange.Redis;

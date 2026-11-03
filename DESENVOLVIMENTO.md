@@ -73,6 +73,12 @@ Para mudar o limite, defina `LimiteDeRequisicoes__Permissoes` e `LimiteDeRequisi
 
 Cada abertura de conta publica `ContaAberta v1`, e cada crédito, débito ou estorno publica `MovimentacaoRegistrada v1`, no RabbitMQ. Eles aparecem como exchanges no painel (`http://localhost:15672`, usuário e senha em [ambiente/desenvolvimento/rabbitmq.env](ambiente/desenvolvimento/rabbitmq.env)). O contrato está no [DOMINIO.md, seção 7](DOMINIO.md#7-contrato-de-integração).
 
+Cada `MovimentacaoRegistrada v1` traz também o saldo disponível da conta após a movimentação (`saldoDisponivelApos`). O `posicao-worker` compara esse saldo com o que calculou e, se forem diferentes, registra um log de erro com o código `saldo-divergente`, a conta, a sequência e o lançamento, sem interromper a projeção ([DOMINIO.md, seção 6.8](DOMINIO.md#68-conciliação-com-lançamentos)). Para procurar divergências:
+
+```bash
+docker compose logs posicao-worker | grep saldo-divergente
+```
+
 O `posicao-worker` consome os eventos pelas filas `posicao-conta-aberta` e `posicao-movimentacao-registrada`. Ele descarta repetições e aplica as movimentações de cada conta na ordem em que foram registradas, mesmo que cheguem fora de ordem. Um evento que falha é tentado de novo com intervalo crescente e, se continuar falhando, vai para a fila `_error` correspondente, sem bloquear os demais.
 
 ### Reconstruir a posição
@@ -119,7 +125,7 @@ A compilação trata **todo warning como erro**. O mesmo build e os mesmos teste
 | `Plataforma.Mediator.Unit.Tests` | Entrega de cada pedido ao handler do tipo dele e falha clara quando não há handler |
 | `Lancamentos.Unit.Tests` | Domínio de Lançamentos (invariantes, Value Objects, estorno, data de competência), casos de uso e contrato dos eventos comparado ao `DOMINIO.md` |
 | `Posicao.Unit.Tests` | Domínio de Posição (ordem por sequência, lacunas, fechamento diário, estorno pelo efeito), consultas, reconstrução e tradução dos eventos de Lançamentos |
-| `Scenarios.Integration.Specs.Tests` | Os 69 cenários das 6 specs de negócio, ponta a ponta com PostgreSQL, RabbitMQ e Redis reais: abertura de conta, titularidade, créditos, débitos, estornos, idempotência, concorrência, eventos (inclusive com o broker fora), projeção (fora de ordem, repetidos, inválidos, Worker parado, reconstrução) e consultas |
+| `Scenarios.Integration.Specs.Tests` | Os 73 cenários das 6 specs de negócio, ponta a ponta com PostgreSQL, RabbitMQ e Redis reais: abertura de conta, titularidade, créditos, débitos, estornos, idempotência, concorrência, eventos (inclusive com o broker fora), projeção (fora de ordem, repetidos, inválidos, Worker parado, reconstrução, conciliação do saldo) e consultas |
 
 ### Cenários de negócio
 

@@ -16,4 +16,7 @@ public static class CodigosDeFalha
 
     /// <summary>Estorno cujo lançamento original não foi recebido pela Posição.</summary>
     public const string EstornoSemOriginal = "estorno-sem-original";
+
+    /// <summary>Saldo calculado diferente do saldo informado por Lançamentos para a mesma sequência (DOMINIO.md, seção 6.8).</summary>
+    public const string SaldoDivergente = "saldo-divergente";
 }

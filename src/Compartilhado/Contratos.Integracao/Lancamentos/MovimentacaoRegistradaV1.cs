@@ -35,5 +35,11 @@ public sealed record MovimentacaoRegistradaV1
     /// <summary>Lançamento anulado, quando <see cref="Tipo"/> é "Estorno".</summary>
     public Guid? LancamentoEstornadoId { get; init; }
 
+    /// <summary>
+    /// Saldo disponível da conta logo após a movimentação, para o consumidor conciliar o saldo que calculou.
+    /// Opcional para manter a v1 compatível: avisos publicados antes do campo não o trazem.
+    /// </summary>
+    public decimal? SaldoDisponivelApos { get; init; }
+
     public required string CorrelacaoId { get; init; }
 }

@@ -23,7 +23,8 @@ public static class EventosSinteticos
         decimal valor,
         DateTimeOffset competencia,
         string? lancamento = null,
-        string? estornado = null) => new()
+        string? estornado = null,
+        decimal? saldoDisponivelApos = null) => new()
     {
         ["tipoEvento"] = "MovimentacaoRegistrada",
         ["versao"] = 1,
@@ -38,6 +39,7 @@ public static class EventosSinteticos
         ["dataCompetencia"] = competencia.ToString("O", CultureInfo.InvariantCulture),
         ["dataRegistro"] = competencia.ToString("O", CultureInfo.InvariantCulture),
         ["lancamentoEstornadoId"] = estornado,
+        ["saldoDisponivelApos"] = saldoDisponivelApos?.ToString(CultureInfo.InvariantCulture),
         ["correlacaoId"] = Guid.NewGuid().ToString(),
     };
 }

@@ -16,6 +16,9 @@ public sealed class SpecScenarioContext(ScenarioContextInfrastructure infraestru
     /// <summary>Relógio de todos os serviços do cenário.</summary>
     public FakeTimeProvider Relogio => infraestrutura.Relogio;
 
+    /// <summary>Divergências de saldo registradas pelo Posicao.Worker do cenário.</summary>
+    public DivergenciasDeSaldo Divergencias => infraestrutura.Divergencias;
+
     /// <summary>Titular padrão do cenário (o "cliente autenticado").</summary>
     public string Titular { get; } = $"titular-{Guid.NewGuid():N}";
 

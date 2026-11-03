@@ -28,6 +28,12 @@ public sealed class Movimento
 
     public LancamentoId? LancamentoEstornadoId { get; private set; }
 
+    /// <summary>
+    /// Saldo disponível que Lançamentos informou para a conta logo após este movimento, usado só para conciliar o
+    /// saldo calculado (DOMINIO.md, seção 6.8). Nulo em movimentos recebidos sem o campo: esses não são conciliados.
+    /// </summary>
+    public decimal? SaldoInformadoApos { get; private set; }
+
     /// <summary>Nulo enquanto o movimento não foi aplicado.</summary>
     public Efeito? Efeito { get; private set; }
 
@@ -47,7 +53,8 @@ public sealed class Movimento
         Valor valor,
         DateTimeOffset dataCompetencia,
         DateTimeOffset dataRegistro,
-        LancamentoId? lancamentoEstornadoId)
+        LancamentoId? lancamentoEstornadoId,
+        decimal? saldoInformadoApos = null)
     {
         if (sequencia < 1)
         {
@@ -69,6 +76,7 @@ public sealed class Movimento
             DataCompetencia = Instantes.Normalizar(dataCompetencia),
             DataRegistro = Instantes.Normalizar(dataRegistro),
             LancamentoEstornadoId = lancamentoEstornadoId,
+            SaldoInformadoApos = saldoInformadoApos is { } saldo ? Dinheiro.DuasCasas(saldo) : null,
         });
     }
 

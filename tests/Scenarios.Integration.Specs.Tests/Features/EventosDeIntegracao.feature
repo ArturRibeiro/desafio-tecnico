@@ -17,12 +17,13 @@ Feature: eventos-de-integracao
     Todo crédito, débito ou estorno aceito DEVE publicar um único `MovimentacaoRegistrada` versão `1`, com:
     - `eventoId`, `tipoEvento`, `versao`, `contaId`, `lancamentoId`;
     - `sequencia`, `tipo`, `valor`, `moeda`;
-    - `dataCompetencia`, `dataRegistro`, `lancamentoEstornadoId` e `correlacaoId`.
+    - `dataCompetencia`, `dataRegistro`, `lancamentoEstornadoId` e `correlacaoId`;
+    - `saldoDisponivelApos`, o saldo disponível da conta logo após a movimentação. O campo é opcional no contrato, para manter a versão `1` compatível com avisos publicados antes dele.
 
     Scenario: Débito aceito
       Given uma conta com dois lançamentos e saldo de R$ 100,00
       When o titular debita R$ 30,00
-      Then Lançamentos avisa a movimentação: débito de R$ 30,00, terceiro lançamento da conta, sem lançamento estornado
+      Then Lançamentos avisa a movimentação: débito de R$ 30,00, terceiro lançamento da conta, sem lançamento estornado e com saldo de R$ 70,00 após a movimentação
 
     Scenario: Estorno aceito
       Given um débito registrado

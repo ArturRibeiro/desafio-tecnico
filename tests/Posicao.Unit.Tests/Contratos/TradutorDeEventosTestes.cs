@@ -18,6 +18,13 @@ public sealed class TradutorDeEventosTestes
         movimento.Efeito.Should().BeNull();
     }
 
+    [Fact(DisplayName = "Saldo informado por Lançamentos chega ao movimento, e a ausência dele também")]
+    public void Movimentacao_LevaOSaldoInformado_QuandoHouver()
+    {
+        TradutorDeEventos.Traduzir(Movimentacao() with { SaldoDisponivelApos = 70.00m }).SaldoInformadoApos.Should().Be(70.00m);
+        TradutorDeEventos.Traduzir(Movimentacao()).SaldoInformadoApos.Should().BeNull();
+    }
+
     [Theory(DisplayName = "Evento de movimentação com tipo desconhecido é inválido")]
     [InlineData("Transferencia")]
     [InlineData("debito")]

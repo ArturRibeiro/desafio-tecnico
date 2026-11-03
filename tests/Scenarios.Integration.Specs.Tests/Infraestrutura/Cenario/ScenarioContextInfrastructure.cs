@@ -21,6 +21,9 @@ public sealed class ScenarioContextInfrastructure : IAsyncDisposable
     private bool brokerParado;
     private SondaDeEventos? sonda;
 
+    /// <summary>Divergências de saldo registradas pelo Posicao.Worker do cenário.</summary>
+    public DivergenciasDeSaldo Divergencias { get; } = new();
+
     /// <summary>Relógio de todos os serviços do cenário: começa no instante real e avança um pouco a cada leitura.</summary>
     public FakeTimeProvider Relogio { get; } = new(DateTimeOffset.UtcNow) { AutoAdvanceAmount = TimeSpan.FromMilliseconds(5) };
 
@@ -203,7 +206,7 @@ public sealed class ScenarioContextInfrastructure : IAsyncDisposable
             return;
         }
 
-        worker = new ServicoDoWorker(ConexaoDePosicao, VirtualHost, ContainerRedis.ConnectionString, PrefixoDasFilas, Relogio);
+        worker = new ServicoDoWorker(ConexaoDePosicao, VirtualHost, ContainerRedis.ConnectionString, PrefixoDasFilas, Relogio, Divergencias);
         var cliente = worker.CreateClient();
         if (!brokerParado)
         {

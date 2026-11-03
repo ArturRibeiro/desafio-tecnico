@@ -2,14 +2,16 @@ namespace Posicao.Application.UseCases.ReconstruirPosicao.Imp;
 
 /// <summary>
 /// Recalcula os fechamentos de todas as contas a partir dos movimentos já recebidos (DOMINIO.md, seção 6.6) e
-/// limpa o cache, que pode guardar saldos calculados de fechamentos errados.
+/// limpa o cache, que pode guardar saldos calculados de fechamentos errados. Concilia de novo cada movimento com o saldo
+/// informado por Lançamentos e registra as divergências.
 /// </summary>
 public sealed class ReconstruirPosicaoHandler(
     IUnidadeDeTrabalho unidade,
     IRepositorioDeTitularidades titularidades,
     IRepositorioDeMovimentos movimentos,
     IRepositorioDeFechamentos fechamentos,
-    ICacheDeSaldos cache)
+    ICacheDeSaldos cache,
+    IRegistroDeDivergencias divergencias)
     : IRequestHandler<ReconstruirPosicaoCommand, int>
 {
     /// <returns>Quantas contas foram reconstruídas.</returns>
@@ -39,6 +41,11 @@ public sealed class ReconstruirPosicaoHandler(
         foreach (var fechamento in resultado.NovosFechamentos)
         {
             fechamentos.Adicionar(fechamento);
+        }
+
+        foreach (var divergencia in resultado.Divergencias)
+        {
+            divergencias.Registrar(divergencia);
         }
 
         return true;
