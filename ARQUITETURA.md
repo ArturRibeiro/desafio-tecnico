@@ -5,7 +5,7 @@ Este documento é o índice dos diagramas da solução. Cada diagrama fica em um
 1. **DDD Estratégico**: o problema visto de fora. Subdomains, Bounded Contexts, como eles se relacionam (Context Map) e como viram sistemas e containers (C4 System Context e Container).
 2. **DDD Tático**: o interior de cada Bounded Context. Aggregates, Value Objects, Domain Services, Domain Events e os componentes que os implementam (C4 Component).
 
-Depois dos diagramas, este documento mostra como a arquitetura responde aos cenários do enunciado: [atributos de qualidade](#3-atributos-de-qualidade) (instabilidade, alta demanda e falhas parciais) e [segurança e proteção de dados](#4-segurança-e-proteção-de-dados).
+Depois dos diagramas, este documento mostra como a arquitetura responde aos cenários do enunciado: [atributos de qualidade](#3-atributos-de-qualidade) (instabilidade, alta demanda e falhas parciais) e [segurança e proteção de dados](#4-segurança-e-proteção-de-dados). Por fim, discute os [trade-offs, os desafios enfrentados e a evolução](#5-trade-offs-desafios-e-evolução) da solução.
 
 As regras de negócio e a Ubiquitous Language estão descritas em [DOMINIO.md](DOMINIO.md).
 
@@ -127,6 +127,68 @@ O enunciado trata de dados financeiros sensíveis. A proteção começa por **mi
 ### 4.4 No desafio
 
 Entram no código: validação JWT nos serviços, escopos, verificação de posse da conta, rate limiting, segredos por variáveis de ambiente, logs sem dados sensíveis, Problem Details, validação de entrada e auditoria de pacotes no build. Para rodar localmente, um emissor de tokens de desenvolvimento substitui o Provedor de Identidade. TLS na borda (o ambiente local usa HTTP por simplicidade), TLS interno, mTLS, cofre de segredos, criptografia em nível de coluna e privilégio mínimo no banco ficam documentados como evolução para produção.
+
+---
+
+## 5. Trade-offs, desafios e evolução
+
+### 5.1 Simplicidade × flexibilidade
+
+Cada escolha que dá flexibilidade cobra complexidade. A regra foi pagar esse custo só onde um requisito do enunciado o exige, e manter simples o resto.
+
+| Escolha | O que ganha | O que custa | Por que vale aqui |
+|---|---|---|---|
+| Dois microsserviços, um por Bounded Context | Lançamentos e Posição escalam, sofrem deploy e falham de forma independente | Broker, dois bancos, consistência eventual e mais peças para operar e observar | O enunciado exige que Lançamentos continue operando se o consolidado cair. Um monólito modular seria mais simples, mas uma falha ou um pico da consulta afetaria a escrita. A divisão para nos Bounded Contexts: quebrar mais (um serviço por caso de uso) só somaria custo |
+| Consistência eventual na posição | Isolamento de falhas e escrita rápida, sem esperar a projeção | A posição pode estar alguns segundos atrasada | O atraso é exposto em `atualizadoAte`, e o saldo que autoriza débitos fica em Lançamentos, com consistência forte ([DOMINIO 8](DOMINIO.md#8-decisões-de-modelagem-e-alternativas)) |
+| MassTransit sobre RabbitMQ | Outbox, Inbox, retentativas e DLQ já testados | Uma dependência com suas convenções e, na v9, licença comercial | Escrever esses mecanismos à mão, numa parte crítica, seria mais código e mais risco |
+| API Gateway (YARP) | Uma única entrada pública, com rate limiting e timeout | Mais um salto de rede e mais um componente | É o ponto natural para proteger a borda e retirar destinos com falha |
+| Cache Redis opcional | Consultas mais rápidas nos picos | Mais um componente e a invalidação na reconstrução | O cache é opcional: fora do ar, a consulta vai ao banco, mais lenta mas correta |
+| DDD tático, camadas e testes de arquitetura | Regras de dinheiro isoladas, testáveis e protegidas contra regressões de desenho | Mais arquivos e mais cerimônia que um CRUD | O risco do domínio está em saldo errado ou lançamento perdido; vale isolar essas regras |
+
+O que ficou simples de propósito, com o caminho para evoluir:
+
+- **Entrega do Outbox dentro da `Lancamentos.Api`**, sem um worker dedicado. Mover para um worker é só configuração, se o volume pedir.
+- **Rate limiting por instância do gateway.** Com várias instâncias, o limite efetivo se multiplica; um limite distribuído (Redis) entra quando houver escala horizontal do gateway.
+- **Emissor de tokens de desenvolvimento** no lugar do Provedor de Identidade, só para rodar localmente.
+- **`docker compose`** como ambiente, sem orquestrador. Os health checks e as APIs sem estado já estão prontos para um orquestrador com autoscaling.
+
+### 5.2 Desafios enfrentados
+
+| Desafio | Como foi resolvido |
+|---|---|
+| **Eventos fora de ordem e repetidos.** O broker não garante ordem, e a posição depende dela. | `Sequencia` por conta: o evento com lacuna fica pendente e é aplicado quando o anterior chega; a chave `(conta, sequencia)` e o Inbox descartam repetições; um lock por conta serializa a projeção ([3.1](#31-consistência-e-concorrência)). |
+| **Débitos simultâneos na mesma conta.** A concorrência otimista sozinha gera retentativas justamente no caso mais disputado. | Bloqueio da linha da `Conta` em cada operação, com a `Versao` como proteção extra. O cenário com 10 débitos simultâneos prova que só os que cabem no saldo são aceitos. |
+| **Gravar o lançamento e publicar o evento (dual write).** | Transactional Outbox: lançamento e mensagem na mesma transação, entregue quando o broker estiver disponível. |
+| **Detectar divergência entre os contextos sem acoplá-los.** A primeira versão só documentava uma conciliação periódica entre os bancos. | O evento passou a levar o saldo disponível após a movimentação, e a Posição compara na mesma sequência. A divergência é detectada no movimento que a causou, sem chamada síncrona nem acesso ao banco do outro contexto ([DOMINIO 6.8](DOMINIO.md#68-conciliação-com-lançamentos)). |
+| **Manter todo acesso a dados em LINQ.** `SELECT ... FOR UPDATE` e o lock por conta não têm equivalente em LINQ, e uma soma sobre o Value Object `Valor` não era traduzida. | O `FOR UPDATE` entra por `TagWith` e um interceptor do EF Core; o lock por conta virou uma função do banco mapeada com `HasDbFunction`; a soma usa a coluna por trás do conversor. Cada tradução foi conferida no SQL gerado. |
+| **Fazer as convenções valerem com o tempo.** Uma regra só documentada se perde. | Testes de arquitetura para cada convenção, e cada regra provada com um teste de mutação (o código que a viola precisa fazer o teste falhar). Assim apareceu que o NetArchTest não enxergava o acesso a um `DbSet`: a verificação passou a ler o IL compilado. |
+| **Licença do MassTransit.** A v9 passou a ter licença comercial. | Fixado na v8 (Apache 2.0), com a versão principal verificada por teste; a decisão fica registrada para reavaliação em produção. |
+| **Build verde na máquina, vermelho no CI.** Uma regra genérica do `.gitignore` (`[Ll]ogs/`) ignorava uma pasta de código dos testes. | Exceção no `.gitignore` e validação a partir de um clone limpo, como o CI faz. |
+
+### 5.3 Evolução
+
+Em ordem de prioridade. Os itens vêm das colunas **Documentar** das seções 3 e 4 e do [DOMINIO 9](DOMINIO.md#9-fora-do-escopo-evoluções-futuras).
+
+**1. Antes de produção: proteger e enxergar**
+
+- TLS na borda (ingress ou load balancer) e para PostgreSQL, RabbitMQ e Redis; cofre de segredos com rotação ([4.2](#42-proteção-dos-dados)).
+- WAF à frente do gateway (regras OWASP Top 10) e proteção contra DDoS do provedor de nuvem, somados ao rate limiting que já existe.
+- Métricas e alertas da integração: mensagens pendentes no Outbox, profundidade da fila, mensagens na `_error` e atraso da posição ([3.4](#34-observabilidade)).
+- Health check passivo do YARP como circuit breaker ([3.2](#32-indisponibilidade-parcial)) e privilégio mínimo no banco ([4.3](#43-integridade-e-auditoria)).
+- Teste de carga (k6 ou NBomber) para medir os limites dos cenários de alta demanda ([3.3](#33-alta-demanda)).
+
+**2. Com o crescimento: volume e operação**
+
+- Particionamento da tabela de lançamentos por data e réplicas de leitura para a posição ([3.3](#33-alta-demanda)).
+- Reenvio de eventos por Lançamentos, para reconstruir a posição mesmo depois de perder eventos ([DOMINIO 9](DOMINIO.md#9-fora-do-escopo-evoluções-futuras)).
+- Rate limiting distribuído entre as instâncias do gateway; entrega do Outbox num worker dedicado.
+- mTLS entre serviços, criptografia em nível de coluna da `descricao` e log de auditoria separado ([4.1](#41-autenticação-e-autorização), [4.2](#42-proteção-dos-dados), [4.3](#43-integridade-e-auditoria)).
+- Reavaliar o MassTransit: licença da v9 ou migração para uma alternativa.
+
+**3. Expansão do negócio**
+
+- Partidas dobradas, base para transferências entre contas.
+- Múltiplas moedas, lançamentos agendados e um contexto de Clientes ([DOMINIO 9](DOMINIO.md#9-fora-do-escopo-evoluções-futuras)). A divisão em Bounded Contexts e o contrato de eventos versionado permitem acrescentá-los sem reescrever os atuais.
 
 ---
 

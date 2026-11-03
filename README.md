@@ -1,6 +1,6 @@
 # Sistema de Movimentações Financeiras
 
-Registra créditos e débitos de contas e informa a posição consolidada (saldo) em qualquer instante. Arquitetura e decisões: [ARQUITETURA.md](ARQUITETURA.md), [DOMINIO.md](DOMINIO.md) e [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md).
+Registra créditos e débitos de contas e informa a posição consolidada (saldo) em qualquer instante. Arquitetura e decisões: [ARQUITETURA.md](ARQUITETURA.md), [DOMINIO.md](DOMINIO.md) e [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md). Trade-offs, desafios enfrentados e evolução: [ARQUITETURA 5](ARQUITETURA.md#5-trade-offs-desafios-e-evolução).
 
 ## Pré-requisitos
 
