@@ -34,6 +34,8 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+# Pasta de código dos cenários (registro das divergências de saldo), não de logs.
+!tests/Scenarios.Integration.Specs.Tests/Infraestrutura/Logs/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
