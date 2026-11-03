@@ -64,7 +64,8 @@ A coluna **No desafio** mostra a priorização: **Implementado** está no códig
 | Redis fora | O cache é opcional: a consulta vai direto ao banco, mais lenta mas correta. | [2.4](diagramas/02-ddd-tatico/04-posicao-consolidada-c4-component.md) | Implementado: cenário [`Cache fora do ar`](tests/Scenarios.Integration.Specs.Tests/Features/ConsultaDePosicao.feature) |
 | Banco de Lançamentos fora | A operação falha sem gravar nada (`500`, sem detalhes internos), e a prontidão responde `503`, tirando a instância do balanceamento. Em dinheiro, é melhor recusar do que perder. | — | Implementado: cenário [`Falha inesperada`](tests/Scenarios.Integration.Specs.Tests/Features/Lancamentos.feature); a resposta `503` da prontidão não tem teste automatizado |
 | Instância com problema | Health checks (`/health/live`, `/health/ready`) para o orquestrador retirar a instância do balanceamento. | — | Implementado, sem teste automatizado |
-| Serviço interno lento | Timeouts e circuit breaker no API Gateway (`Microsoft.Extensions.Http.Resilience`), para a lentidão de um serviço não esgotar os recursos do outro. | [1.4](diagramas/01-ddd-estrategico/04-c4-container.md) | Documentar |
+| Serviço interno lento | Timeout de 10 segundos por cluster no API Gateway (`ActivityTimeout` do YARP), respondendo `504`, para a lentidão de um serviço não esgotar os recursos do gateway. | [1.4](diagramas/01-ddd-estrategico/04-c4-container.md) | Implementado, sem teste automatizado |
+| Serviço interno falhando seguidamente | Health check passivo do YARP: o destino com falhas seguidas é marcado como indisponível e o gateway responde `503` na hora, sem chamá-lo, até ele se recuperar (efeito de circuit breaker). | [1.4](diagramas/01-ddd-estrategico/04-c4-container.md) | Documentar |
 
 ### 3.3 Alta demanda
 
@@ -107,7 +108,7 @@ O enunciado trata de dados financeiros sensíveis. A proteção começa por **mi
 | Controle | Como |
 |---|---|
 | Minimização | O sistema guarda apenas identificadores, valores e datas. Nome, documento e demais dados cadastrais ficam fora do escopo ([DOMINIO 9](DOMINIO.md#9-fora-do-escopo-evoluções-futuras)). Os eventos não carregam dados cadastrais; o `TitularId`, pseudônimo, trafega uma única vez, em `ContaAberta v1`. |
-| Em trânsito | HTTPS (TLS 1.2+) do cliente ao gateway; em produção, TLS também para PostgreSQL, RabbitMQ e Redis. |
+| Em trânsito | Em produção, HTTPS (TLS 1.2+) do cliente até a borda, com o TLS terminando no ingress ou load balancer à frente do gateway, e TLS também para PostgreSQL, RabbitMQ e Redis. No ambiente local, tudo trafega em HTTP. |
 | Em repouso | Criptografia de disco e backups nos bancos gerenciados. O campo `descricao` do lançamento, por ser texto livre, é o único que pode conter dado sensível e é candidato a criptografia em nível de coluna. |
 | Segredos | Nenhum segredo no repositório. Localmente, variáveis de ambiente vindas de arquivos de desenvolvimento com valores falsos; em produção, um cofre de segredos (Azure Key Vault, AWS Secrets Manager ou HashiCorp Vault) com rotação. |
 | Logs e erros | Logs sem tokens, descrição de lançamento ou dados pessoais. Respostas de erro no formato Problem Details (RFC 7807), sem stack trace. |
@@ -125,7 +126,7 @@ O enunciado trata de dados financeiros sensíveis. A proteção começa por **mi
 
 ### 4.4 No desafio
 
-Entram no código: validação JWT nos serviços, escopos, verificação de posse da conta, rate limiting, segredos por variáveis de ambiente, logs sem dados sensíveis, Problem Details, validação de entrada e auditoria de pacotes no build. Para rodar localmente, um emissor de tokens de desenvolvimento substitui o Provedor de Identidade. TLS interno, mTLS, cofre de segredos, criptografia em nível de coluna e privilégio mínimo no banco ficam documentados como evolução para produção.
+Entram no código: validação JWT nos serviços, escopos, verificação de posse da conta, rate limiting, segredos por variáveis de ambiente, logs sem dados sensíveis, Problem Details, validação de entrada e auditoria de pacotes no build. Para rodar localmente, um emissor de tokens de desenvolvimento substitui o Provedor de Identidade. TLS na borda (o ambiente local usa HTTP por simplicidade), TLS interno, mTLS, cofre de segredos, criptografia em nível de coluna e privilégio mínimo no banco ficam documentados como evolução para produção.
 
 ---
 
