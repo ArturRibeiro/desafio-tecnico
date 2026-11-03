@@ -10,9 +10,9 @@ public sealed class ScenarioContextInfrastructure : IAsyncDisposable
     private const string RedisInacessivel = "127.0.0.1:1,connectTimeout=250,syncTimeout=250";
 
     private readonly string id = Guid.NewGuid().ToString("N")[..12];
-    private ServicoDeLancamentos? lancamentos;
-    private ServicoDePosicao? posicao;
-    private ServicoDoWorker? worker;
+    private LancamentosApiFactory? lancamentos;
+    private PosicaoApiFactory? posicao;
+    private PosicaoWorkerFactory? worker;
     private HttpClient? clienteDeLancamentos;
     private HttpClient? clienteDePosicao;
     private string? bancoDeLancamentos;
@@ -187,14 +187,14 @@ public sealed class ScenarioContextInfrastructure : IAsyncDisposable
     private async Task SubirLancamentosAsync()
     {
         sonda = await SondaDeEventos.CriarAsync(ContainerRabbitMq.Uri(VirtualHost), $"sonda-{id}");
-        lancamentos = new ServicoDeLancamentos(ConexaoDeLancamentos, VirtualHost, Relogio);
+        lancamentos = new LancamentosApiFactory(ConexaoDeLancamentos, VirtualHost, Relogio);
         clienteDeLancamentos = lancamentos.CreateClient();
         await EsperarProntoAsync(clienteDeLancamentos, "Lancamentos.Api");
     }
 
     private async Task SubirPosicaoAsync(string redis)
     {
-        posicao = new ServicoDePosicao(ConexaoDePosicao, redis, Relogio);
+        posicao = new PosicaoApiFactory(ConexaoDePosicao, redis, Relogio);
         clienteDePosicao = posicao.CreateClient();
         await EsperarProntoAsync(clienteDePosicao, "Posicao.Api");
     }
@@ -206,7 +206,7 @@ public sealed class ScenarioContextInfrastructure : IAsyncDisposable
             return;
         }
 
-        worker = new ServicoDoWorker(ConexaoDePosicao, VirtualHost, ContainerRedis.ConnectionString, PrefixoDasFilas, Relogio, Divergencias);
+        worker = new PosicaoWorkerFactory(ConexaoDePosicao, VirtualHost, ContainerRedis.ConnectionString, PrefixoDasFilas, Relogio, Divergencias);
         var cliente = worker.CreateClient();
         if (!brokerParado)
         {

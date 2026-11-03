@@ -4,7 +4,7 @@ public sealed class CasosDeUsoTestes
 {
     private static readonly TitularId OutroTitular = TitularId.Criar("cliente-b").Valor;
 
-    private readonly Banco banco = new();
+    private readonly InMemoryRepository banco = new();
     private readonly RelogioFixo relogio = new(Agora);
 
     [Fact(DisplayName = "Abertura de conta repetida com a mesma chave devolve a mesma conta")]

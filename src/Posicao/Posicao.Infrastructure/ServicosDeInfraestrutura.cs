@@ -2,21 +2,22 @@ namespace Posicao.Infrastructure;
 
 public static class ServicosDeInfraestrutura
 {
-    /// <summary>Banco, repositórios, unidade de trabalho e serviços dos casos de uso de Posição.</summary>
+    /// <summary>Banco, repositórios, leitura das Queries (IDbContextReadOnly), unidade de trabalho e serviços dos casos de uso de Posição.</summary>
     public static IServiceCollection AdicionarInfraestruturaDePosicao(this IServiceCollection servicos, string postgres, IConfiguration secaoBanco)
     {
         servicos.AddDbContext<PosicaoDbContext>(o => o.UseNpgsql(postgres));
-        servicos.AddScoped<IRepositorioDeTitularidades, RepositorioDeTitularidades>();
-        servicos.AddScoped<IRepositorioDeMovimentos, RepositorioDeMovimentos>();
-        servicos.AddScoped<IRepositorioDeFechamentos, RepositorioDeFechamentos>();
-        servicos.AddScoped<IUnidadeDeTrabalho, UnidadeDeTrabalho>();
+        servicos.AddScoped<ITitularidadeRepository, TitularidadeRepository>();
+        servicos.AddScoped<IMovimentoRepository, MovimentoRepository>();
+        servicos.AddScoped<IFechamentoDiarioRepository, FechamentoDiarioRepository>();
+        servicos.AddScoped<IDbContextReadOnly, DbContextReadOnly>();
+        servicos.AddScoped<IUnitOfWork, UnitOfWork>();
         servicos.AddSingleton(TimeProvider.System);
 
         servicos.AddScoped<AplicacaoDePendentes>();
         servicos.AddMetrics();
-        servicos.AddSingleton<IRegistroDeDivergencias, RegistroDeDivergenciasEmLog>();
+        servicos.AddSingleton<IRegistroDeDivergencias, DivergenciaLogAdapter>();
 
-        servicos.Configure<OpcoesDeBanco>(secaoBanco);
+        servicos.Configure<BancoOptions>(secaoBanco);
         return servicos;
     }
 
@@ -24,11 +25,11 @@ public static class ServicosDeInfraestrutura
     /// Cache Redis com timeouts curtos e sem abortar a conexão: fora do ar, cada operação falha rápido e a consulta
     /// segue pelo banco. Sem connection string, o cache fica desligado.
     /// </summary>
-    public static IServiceCollection AdicionarCacheDeSaldos(this IServiceCollection servicos, string? redis)
+    public static IServiceCollection AdicionarSaldoCache(this IServiceCollection servicos, string? redis)
     {
         if (string.IsNullOrWhiteSpace(redis))
         {
-            servicos.AddSingleton<ICacheDeSaldos, SemCache>();
+            servicos.AddSingleton<ISaldoCache, NullSaldoCache>();
             return servicos;
         }
 
@@ -38,7 +39,7 @@ public static class ServicosDeInfraestrutura
         opcoes.SyncTimeout = 250;
         opcoes.AsyncTimeout = 250;
         servicos.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(opcoes));
-        servicos.AddSingleton<ICacheDeSaldos, CacheDeSaldosRedis>();
+        servicos.AddSingleton<ISaldoCache, SaldoRedisCache>();
         return servicos;
     }
 
@@ -61,9 +62,9 @@ public static class ServicosDeInfraestrutura
     public static void UsarInboxDePosicao(this IReceiveEndpointConfigurator endpoint, IRegistrationContext contexto) =>
         endpoint.UseEntityFrameworkOutbox<PosicaoDbContext>(contexto);
 
-    public static IServiceCollection AdicionarAplicadorDeMigracoes(this IServiceCollection servicos) =>
-        servicos.AddHostedService<AplicadorDeMigracoes>();
+    public static IServiceCollection AdicionarMigracaoHostedService(this IServiceCollection servicos) =>
+        servicos.AddHostedService<MigracaoHostedService>();
 
-    public static IHealthChecksBuilder AdicionarVerificacaoDeMigracoes(this IHealthChecksBuilder saude, params string[] tags) =>
-        saude.AddCheck<VerificacaoDeMigracoes>("migracoes", tags: tags);
+    public static IHealthChecksBuilder AdicionarMigracaoHealthCheck(this IHealthChecksBuilder saude, params string[] tags) =>
+        saude.AddCheck<MigracaoHealthCheck>("migracoes", tags: tags);
 }

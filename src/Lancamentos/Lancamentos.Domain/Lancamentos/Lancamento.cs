@@ -1,10 +1,11 @@
 namespace Lancamentos.Domain.Lancamentos;
 
 /// <summary>
-/// Registro imutável de uma movimentação (DOMINIO.md, seção 5.2). Só a <see cref="Conta"/> cria lançamentos;
-/// não há métodos de alteração, e a única forma de corrigir um lançamento é estorná-lo.
+/// Aggregate Root: registro imutável de uma movimentação (DOMINIO.md, seção 5.2). Só a <see cref="Conta"/> cria
+/// lançamentos, na mesma transação que atualiza o saldo; não há métodos de alteração, e a única forma de corrigir um
+/// lançamento é estorná-lo.
 /// </summary>
-public sealed class Lancamento
+public sealed class Lancamento : IAggregateRoot
 {
     private Lancamento()
     {

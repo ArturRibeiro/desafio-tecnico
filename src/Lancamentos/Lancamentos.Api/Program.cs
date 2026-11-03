@@ -9,7 +9,7 @@ builder.Services.AddScoped<IContextoDaRequisicao, ContextoDaRequisicao>();
 builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AdicionarAutenticacaoJwt(builder.Configuration.GetSection("Autenticacao"));
-builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new ConversorDeInstanteComFuso()));
+builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new InstanteComFusoJsonConverter()));
 
 // Toda resposta de erro em Problem Details com "codigo"; nenhuma expõe stack trace, SQL ou mensagem de exceção.
 builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = contexto =>
@@ -26,7 +26,7 @@ builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = contexto =>
 
 builder.Services.AddHealthChecks()
     .AddNpgSql(postgres, name: "postgres", tags: [Saude.TagProntidao], timeout: TimeSpan.FromSeconds(3))
-    .AdicionarVerificacaoDeMigracoes(Saude.TagProntidao);
+    .AdicionarMigracaoHealthCheck(Saude.TagProntidao);
 
 // O MassTransit conecta ao broker em segundo plano: a API sobe e aceita lançamentos mesmo com o RabbitMQ fora,
 // e as mensagens esperam no Outbox.

@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../Posicao.Domain/Posicao.Domain.csproj" />
     <ProjectReference Include="../../Compartilhado/Plataforma.Mediator/Plataforma.Mediator.csproj" />
   </ItemGroup>

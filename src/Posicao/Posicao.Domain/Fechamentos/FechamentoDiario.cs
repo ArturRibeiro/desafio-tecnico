@@ -4,7 +4,7 @@ namespace Posicao.Domain.Fechamentos;
 /// Aggregate Root: consolidação dos movimentos de uma conta num dia UTC (DOMINIO.md, seção 6.1).
 /// <see cref="SaldoFechamento"/> é sempre abertura + créditos − débitos.
 /// </summary>
-public sealed class FechamentoDiario
+public sealed class FechamentoDiario : IAggregateRoot
 {
     private FechamentoDiario()
     {

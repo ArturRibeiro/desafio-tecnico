@@ -3,7 +3,7 @@
 Este documento é o índice dos diagramas da solução. Cada diagrama fica em um arquivo próprio na pasta [`diagramas/`](diagramas/), na ordem do DDD:
 
 1. **DDD Estratégico**: o problema visto de fora. Subdomains, Bounded Contexts, como eles se relacionam (Context Map) e como viram sistemas e containers (C4 System Context e Container).
-2. **DDD Tático**: o interior de cada Bounded Context. Aggregates, Entities, Value Objects, Domain Events e os componentes que os implementam (C4 Component).
+2. **DDD Tático**: o interior de cada Bounded Context. Aggregates, Value Objects, Domain Services, Domain Events e os componentes que os implementam (C4 Component).
 
 Depois dos diagramas, este documento mostra como a arquitetura responde aos cenários do enunciado: [atributos de qualidade](#3-atributos-de-qualidade) (instabilidade, alta demanda e falhas parciais) e [segurança e proteção de dados](#4-segurança-e-proteção-de-dados).
 
@@ -28,9 +28,9 @@ Pasta [`diagramas/02-ddd-tatico/`](diagramas/02-ddd-tatico/)
 
 | # | Diagrama | O que mostra |
 |---|---|---|
-| 2.1 | [BC Lançamentos — Modelo de domínio](diagramas/02-ddd-tatico/01-lancamentos-modelo-de-dominio.md) | Aggregate Root `Conta`, Entity `Lancamento`, Value Objects e Domain Events |
+| 2.1 | [BC Lançamentos — Modelo de domínio](diagramas/02-ddd-tatico/01-lancamentos-modelo-de-dominio.md) | Aggregate Roots `Conta` e `Lancamento`, Value Objects e Domain Events |
 | 2.2 | [BC Lançamentos — C4 Component](diagramas/02-ddd-tatico/02-lancamentos-c4-component.md) | Camadas da API, com o Outbox do MassTransit |
-| 2.3 | [BC Posição Consolidada — Modelo de domínio](diagramas/02-ddd-tatico/03-posicao-consolidada-modelo-de-dominio.md) | Aggregate Root `FechamentoDiario`, Entity `Movimento` e Value Objects |
+| 2.3 | [BC Posição Consolidada — Modelo de domínio](diagramas/02-ddd-tatico/03-posicao-consolidada-modelo-de-dominio.md) | Aggregate Roots `FechamentoDiario`, `Titularidade` e `Movimento` e Value Objects |
 | 2.4 | [BC Posição Consolidada — C4 Component](diagramas/02-ddd-tatico/04-posicao-consolidada-c4-component.md) | Consumo de eventos e consultas |
 | 2.5 | [Ciclo de vida de um débito](diagramas/02-ddd-tatico/05-ciclo-de-vida-de-um-debito.md) | Do comando até a posição consolidada, passando pelos dois Bounded Contexts |
 
@@ -155,5 +155,5 @@ Os diagramas são escritos em Mermaid e exibidos diretamente pelo GitHub. Os dia
 | Upstream / Downstream | Estratégico | Direção do fluxo Lançamentos → RabbitMQ → Posição Consolidada |
 | Published Language | Estratégico | Eventos `ContaAberta v1` e `MovimentacaoRegistrada v1` trafegando pelo broker |
 | Sem Shared Kernel | Estratégico | Bancos separados e Value Objects duplicados em cada contexto |
-| Aggregate Root, Entity, Value Object | Tático | [2.1](diagramas/02-ddd-tatico/01-lancamentos-modelo-de-dominio.md), [2.3](diagramas/02-ddd-tatico/03-posicao-consolidada-modelo-de-dominio.md) e o componente **Modelo de Domínio** |
+| Aggregate Root, Value Object, Repository | Tático | [2.1](diagramas/02-ddd-tatico/01-lancamentos-modelo-de-dominio.md), [2.3](diagramas/02-ddd-tatico/03-posicao-consolidada-modelo-de-dominio.md) e o componente **Modelo de Domínio** |
 | Domain Event → Integration Event | Tático | Tradutor de Eventos e Outbox do MassTransit ([2.2](diagramas/02-ddd-tatico/02-lancamentos-c4-component.md)) e o ciclo de vida ([2.5](diagramas/02-ddd-tatico/05-ciclo-de-vida-de-um-debito.md)) |

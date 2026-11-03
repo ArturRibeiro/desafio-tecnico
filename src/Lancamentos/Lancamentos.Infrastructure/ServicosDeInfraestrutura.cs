@@ -5,14 +5,14 @@ public static class ServicosDeInfraestrutura
     /// <summary>Banco, repositórios, unidade de trabalho, publicação de eventos e migrações de Lançamentos.</summary>
     public static IServiceCollection AdicionarInfraestruturaDeLancamentos(this IServiceCollection servicos, string postgres, IConfiguration secaoBanco)
     {
-        servicos.AddDbContext<LancamentosDbContext>(o => o.UseNpgsql(postgres));
-        servicos.AddScoped<IRepositorioDeContas, RepositorioDeContas>();
-        servicos.AddScoped<IRepositorioDeLancamentos, RepositorioDeLancamentos>();
-        servicos.AddScoped<IUnidadeDeTrabalho, UnidadeDeTrabalho>();
-        servicos.AddScoped<PublicadorDeEventos>();
+        servicos.AddDbContext<LancamentosDbContext>(o => o.UseNpgsql(postgres).AddInterceptors(new BloqueioParaAlteracaoInterceptor()));
+        servicos.AddScoped<IContaRepository, ContaRepository>();
+        servicos.AddScoped<ILancamentoRepository, LancamentoRepository>();
+        servicos.AddScoped<IUnitOfWork, UnitOfWork>();
+        servicos.AddScoped<EventoPublisher>();
 
-        servicos.Configure<OpcoesDeBanco>(secaoBanco);
-        servicos.AddHostedService<AplicadorDeMigracoes>();
+        servicos.Configure<BancoOptions>(secaoBanco);
+        servicos.AddHostedService<MigracaoHostedService>();
         return servicos;
     }
 
@@ -31,6 +31,6 @@ public static class ServicosDeInfraestrutura
         });
     }
 
-    public static IHealthChecksBuilder AdicionarVerificacaoDeMigracoes(this IHealthChecksBuilder saude, params string[] tags) =>
-        saude.AddCheck<VerificacaoDeMigracoes>("migracoes", tags: tags);
+    public static IHealthChecksBuilder AdicionarMigracaoHealthCheck(this IHealthChecksBuilder saude, params string[] tags) =>
+        saude.AddCheck<MigracaoHealthCheck>("migracoes", tags: tags);
 }

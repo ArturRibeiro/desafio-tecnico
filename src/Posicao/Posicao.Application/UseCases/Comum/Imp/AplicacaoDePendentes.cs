@@ -5,8 +5,8 @@ namespace Posicao.Application.UseCases.Comum.Imp;
 /// de saldo que ele apontar.
 /// </summary>
 public sealed class AplicacaoDePendentes(
-    IRepositorioDeMovimentos movimentos,
-    IRepositorioDeFechamentos fechamentos,
+    IMovimentoRepository movimentos,
+    IFechamentoDiarioRepository fechamentos,
     IRegistroDeDivergencias divergencias)
 {
     /// <param name="novo">Movimento recém-adicionado nesta transação, que a consulta ao banco ainda não enxerga.</param>

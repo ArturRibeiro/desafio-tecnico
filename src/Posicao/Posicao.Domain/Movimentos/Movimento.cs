@@ -1,10 +1,10 @@
 namespace Posicao.Domain.Movimentos;
 
 /// <summary>
-/// Entity: cópia de leitura de um lançamento recebido de Lançamentos (DOMINIO.md, seção 6.2). Fica pendente
+/// Aggregate Root: cópia de leitura de um lançamento recebido de Lançamentos (DOMINIO.md, seção 6.2). Fica pendente
 /// enquanto a sua sequência for maior que a próxima esperada da conta; o <see cref="Efeito"/> é definido na aplicação.
 /// </summary>
-public sealed class Movimento
+public sealed class Movimento : IAggregateRoot
 {
     private Movimento()
     {

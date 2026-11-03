@@ -14,7 +14,7 @@ flowchart TB
         autenticacao["<b>Autenticação JWT</b><br/>[Component: Plataforma.Hospedagem]<br/><br/>Valida assinatura, emissor, audiência e validade;<br/>exige o escopo lancamentos:escrever"]
         endpoints["<b>Endpoints de Lançamentos</b><br/>[Component: Minimal API]<br/><br/>Extrai o TitularId do sub, valida a entrada<br/>e devolve erros em Problem Details"]
         handlers["<b>Casos de Uso</b><br/>[Component: Application + Mediator]<br/><br/>Um handler por comando: bloqueia a conta, confere<br/>a titularidade e a idempotência e executa o comando"]
-        dominio["<b>Modelo de Domínio</b><br/>[Component: Domain]<br/><br/>Aggregate Root Conta, Entity Lancamento,<br/>Value Objects e Domain Events"]
+        dominio["<b>Modelo de Domínio</b><br/>[Component: Domain]<br/><br/>Aggregate Roots Conta e Lancamento,<br/>Value Objects e Domain Events"]
         repos["<b>Repositórios</b><br/>[Component: Infrastructure / EF Core]<br/><br/>Carrega a Conta com SELECT ... FOR UPDATE;<br/>índices únicos como última barreira"]
         tradutor["<b>Tradutor de Eventos</b><br/>[Component: Infrastructure]<br/><br/>Converte Domain Events em ContaAberta v1<br/>e MovimentacaoRegistrada v1"]
         busOutbox["<b>Outbox Transacional</b><br/>[Component: MassTransit EF Core Outbox]<br/><br/>Grava a mensagem na mesma<br/>transação do SaveChanges"]

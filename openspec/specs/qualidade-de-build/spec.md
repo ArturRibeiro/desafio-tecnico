@@ -39,11 +39,15 @@ O projeto de Domínio de cada Bounded Context NÃO DEVE depender de nenhum outro
 - **THEN** os testes de arquitetura falham e identificam a dependência proibida
 
 ### Requirement: Dependências entre camadas apontam para dentro
-Em cada Bounded Context, a Aplicação DEVE depender apenas do Domínio e da biblioteca técnica do Mediator. A Infraestrutura DEVE depender apenas da Aplicação, do Domínio e do projeto de contratos de integração, onde traduz Domain Events em Integration Events. Nenhuma camada interna pode depender de uma camada mais externa.
+Em cada Bounded Context, a Aplicação DEVE depender apenas do Domínio e da biblioteca técnica do Mediator, e do EF Core somente pelas extensões de LINQ (AsNoTracking, ToListAsync, FirstOrDefaultAsync, SumAsync), usadas pelas Queries para ler pelo IDbContextReadOnly. A Infraestrutura DEVE depender apenas da Aplicação, do Domínio e do projeto de contratos de integração, onde traduz Domain Events em Integration Events. Nenhuma camada interna pode depender de uma camada mais externa.
 
 #### Scenario: Aplicação referencia Infraestrutura
 - **WHEN** um tipo da Aplicação passa a depender de um tipo da Infraestrutura
 - **THEN** os testes de arquitetura falham
+
+#### Scenario: Aplicação usa um tipo do EF Core além das extensões de LINQ
+- **WHEN** um tipo da Aplicação passa a depender de DbContext, DbSet ou de qualquer outro tipo do EF Core que não sejam as extensões assíncronas de LINQ
+- **THEN** os testes de arquitetura falham e identificam o tipo usado
 
 #### Scenario: Aplicação referencia os contratos de integração
 - **WHEN** um tipo da Aplicação ou do Domínio passa a depender do projeto de contratos de integração

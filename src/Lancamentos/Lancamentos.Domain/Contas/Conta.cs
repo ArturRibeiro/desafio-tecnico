@@ -5,7 +5,7 @@ namespace Lancamentos.Domain.Contas;
 /// Não guarda a coleção de lançamentos: mantém o saldo e a sequência e produz um <see cref="Lancamento"/> a cada operação,
 /// que é persistido na mesma transação.
 /// </summary>
-public sealed class Conta
+public sealed class Conta : IAggregateRoot
 {
     private readonly List<IEventoDeDominio> eventos = [];
 

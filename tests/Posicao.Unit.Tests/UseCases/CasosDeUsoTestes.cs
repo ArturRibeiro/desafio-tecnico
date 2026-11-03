@@ -3,21 +3,21 @@ namespace Posicao.Unit.Tests.UseCases;
 /// <summary>Tarefas 3.1 a 3.3: casos de uso de projeção, consultas e reconstrução, com portas em memória.</summary>
 public sealed class CasosDeUsoTestes
 {
-    private static readonly DateTimeOffset Dia1 = Fabrica.Dia1;
-    private static readonly DateTimeOffset Dia3 = Fabrica.Dia1.AddDays(2);
+    private static readonly DateTimeOffset Dia1 = DominioFactory.Dia1;
+    private static readonly DateTimeOffset Dia3 = DominioFactory.Dia1.AddDays(2);
     private static readonly CancellationToken Ct = CancellationToken.None;
 
-    private readonly Memoria memoria = new();
-    private readonly CacheFalso cache = new();
-    private readonly DivergenciasRegistradas divergencias = new();
-    private readonly ContaId conta = Fabrica.NovaConta();
+    private readonly InMemoryRepository memoria = new();
+    private readonly SaldoCacheFake cache = new();
+    private readonly DivergenciaRegistroFake divergencias = new();
+    private readonly ContaId conta = DominioFactory.NovaConta();
 
     private AplicacaoDePendentes Pendentes => new(memoria, memoria, divergencias);
 
     [Fact(DisplayName = "Movimento recebido antes da abertura fica pendente e é aplicado na abertura")]
     public async Task Movimento_AntesDaAbertura_FicaPendenteEEAplicadoNaAbertura()
     {
-        var resumo = await MovimentarAsync(Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(9)));
+        var resumo = await MovimentarAsync(DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(9)));
 
         resumo.Aplicados.Should().Be(0);
         memoria.Fechamentos.Should().BeEmpty();
@@ -32,9 +32,9 @@ public sealed class CasosDeUsoTestes
     public async Task Movimento_Repetido_EJaRecebidoENaoMudaNada()
     {
         await AbrirAsync();
-        await MovimentarAsync(Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(9)));
+        await MovimentarAsync(DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(9)));
 
-        var repetido = await MovimentarAsync(Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(9)));
+        var repetido = await MovimentarAsync(DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(9)));
 
         repetido.JaRecebido.Should().BeTrue();
         memoria.Movimentos.Should().ContainSingle();
@@ -54,10 +54,10 @@ public sealed class CasosDeUsoTestes
     public async Task Movimentos_ForaDeOrdem_SaoAplicadosQuandoALacunaFecha()
     {
         await AbrirAsync();
-        await MovimentarAsync(Fabrica.Credito(conta, 2, 20m, Dia1.AddHours(10)));
+        await MovimentarAsync(DominioFactory.Credito(conta, 2, 20m, Dia1.AddHours(10)));
         memoria.Fechamentos.Should().BeEmpty();
 
-        var resumo = await MovimentarAsync(Fabrica.Credito(conta, 1, 10m, Dia1.AddHours(9)));
+        var resumo = await MovimentarAsync(DominioFactory.Credito(conta, 1, 10m, Dia1.AddHours(9)));
 
         resumo.Aplicados.Should().Be(2);
         memoria.Fechamentos.Should().ContainSingle().Subject.SaldoFechamento.Should().Be(30.00m);
@@ -67,11 +67,11 @@ public sealed class CasosDeUsoTestes
     public async Task Estorno_ResolveOOriginalJaAplicado()
     {
         await AbrirAsync();
-        var debito = Fabrica.Debito(conta, 2, 30m, Dia1.AddHours(10));
-        await MovimentarAsync(Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(9)));
+        var debito = DominioFactory.Debito(conta, 2, 30m, Dia1.AddHours(10));
+        await MovimentarAsync(DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(9)));
         await MovimentarAsync(debito);
 
-        await MovimentarAsync(Fabrica.Estorno(conta, 3, debito, Dia1.AddHours(11)));
+        await MovimentarAsync(DominioFactory.Estorno(conta, 3, debito, Dia1.AddHours(11)));
 
         memoria.Fechamentos.Should().ContainSingle().Subject.SaldoFechamento.Should().Be(100.00m);
     }
@@ -112,10 +112,10 @@ public sealed class CasosDeUsoTestes
     public async Task Posicao_IgnoraPendentesEInformaAUltimaSequenciaAplicada()
     {
         await AbrirAsync();
-        var segunda = Fabrica.Credito(conta, 2, 20m, Dia1.AddHours(10));
-        await MovimentarAsync(Fabrica.Credito(conta, 1, 10m, Dia1.AddHours(9)));
+        var segunda = DominioFactory.Credito(conta, 2, 20m, Dia1.AddHours(10));
+        await MovimentarAsync(DominioFactory.Credito(conta, 1, 10m, Dia1.AddHours(9)));
         await MovimentarAsync(segunda);
-        await MovimentarAsync(Fabrica.Credito(conta, 4, 40m, Dia1.AddHours(12)));
+        await MovimentarAsync(DominioFactory.Credito(conta, 4, 40m, Dia1.AddHours(12)));
 
         var posicao = await PosicaoAsync(Dia1.AddHours(23));
 
@@ -148,10 +148,10 @@ public sealed class CasosDeUsoTestes
     {
         await AbrirAsync();
 
-        var deOutro = await new ObterPosicaoEmHandler(memoria, memoria, memoria, cache, Relogio())
-            .HandleAsync(new ObterPosicaoEmQuery(Fabrica.Titular("outro"), conta, null), Ct);
-        var inexistente = await new ObterPosicaoEmHandler(memoria, memoria, memoria, cache, Relogio())
-            .HandleAsync(new ObterPosicaoEmQuery(Fabrica.Titular(), Fabrica.NovaConta(), null), Ct);
+        var deOutro = await new ObterPosicaoEmHandler(new InMemoryDbContextReadOnly(memoria), cache, Relogio())
+            .HandleAsync(new ObterPosicaoEmQuery(DominioFactory.Titular("outro"), conta, null), Ct);
+        var inexistente = await new ObterPosicaoEmHandler(new InMemoryDbContextReadOnly(memoria), cache, Relogio())
+            .HandleAsync(new ObterPosicaoEmQuery(DominioFactory.Titular(), DominioFactory.NovaConta(), null), Ct);
 
         deOutro.Falha?.Codigo.Should().Be(CodigosDeFalha.ContaNaoEncontrada);
         inexistente.Falha.Should().Be(deOutro.Falha);
@@ -204,7 +204,7 @@ public sealed class CasosDeUsoTestes
         await AbrirAsync();
         for (var dia = 0; dia < 3; dia++)
         {
-            await MovimentarAsync(Fabrica.Credito(conta, dia + 1, 10m, Dia1.AddDays(dia)));
+            await MovimentarAsync(DominioFactory.Credito(conta, dia + 1, 10m, Dia1.AddDays(dia)));
         }
 
         var primeira = await FechamentosAsync(new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 31), pagina: 1, tamanho: 2);
@@ -275,8 +275,8 @@ public sealed class CasosDeUsoTestes
     public async Task Projecao_RegistraADivergencia_ESegueAplicando()
     {
         await AbrirAsync();
-        await MovimentarAsync(Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(10), saldoInformado: 100m));
-        var debito = Fabrica.Debito(conta, 2, 30m, Dia1.AddHours(11), saldoInformado: 50m);
+        await MovimentarAsync(DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(10), saldoInformado: 100m));
+        var debito = DominioFactory.Debito(conta, 2, 30m, Dia1.AddHours(11), saldoInformado: 50m);
 
         var resumo = await MovimentarAsync(debito);
 
@@ -289,9 +289,9 @@ public sealed class CasosDeUsoTestes
     public async Task Reconstrucao_RegistraDeNovoAsDivergencias()
     {
         await AbrirAsync();
-        var debito = Fabrica.Debito(conta, 1, 30m, Dia1.AddHours(11), saldoInformado: 0m);
+        var debito = DominioFactory.Debito(conta, 1, 30m, Dia1.AddHours(11), saldoInformado: 0m);
         memoria.Movimentos.Add(debito);
-        await MovimentarAsync(Fabrica.Credito(conta, 2, 10m, Dia1.AddHours(12)));
+        await MovimentarAsync(DominioFactory.Credito(conta, 2, 10m, Dia1.AddHours(12)));
         divergencias.Registradas.Clear();
 
         await Reconstruir().HandleAsync(new ReconstruirPosicaoCommand(), Ct);
@@ -308,21 +308,21 @@ public sealed class CasosDeUsoTestes
     private async Task CenarioDeDoisDiasAsync()
     {
         await AbrirAsync();
-        await MovimentarAsync(Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(10)));
-        await MovimentarAsync(Fabrica.Debito(conta, 2, 30m, Dia3.AddHours(9)));
+        await MovimentarAsync(DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(10)));
+        await MovimentarAsync(DominioFactory.Debito(conta, 2, 30m, Dia3.AddHours(9)));
     }
 
     private Task<ResumoDaProjecao> AbrirAsync() =>
-        new ProjetarAberturaHandler(memoria, memoria, Pendentes).HandleAsync(new ProjetarAberturaCommand(conta, Fabrica.Titular(), Dia1.AddHours(8)), Ct);
+        new ProjetarAberturaHandler(memoria, memoria, Pendentes).HandleAsync(new ProjetarAberturaCommand(conta, DominioFactory.Titular(), Dia1.AddHours(8)), Ct);
 
     private Task<ResumoDaProjecao> MovimentarAsync(Movimento movimento) =>
         new ProjetarMovimentacaoHandler(memoria, memoria, memoria, Pendentes).HandleAsync(new ProjetarMovimentacaoCommand(movimento), Ct);
 
     private Task<Resultado<PosicaoConsolidadaResponse>> PosicaoAsync(DateTimeOffset? instante) =>
-        new ObterPosicaoEmHandler(memoria, memoria, memoria, cache, Relogio()).HandleAsync(new ObterPosicaoEmQuery(Fabrica.Titular(), conta, instante), Ct);
+        new ObterPosicaoEmHandler(new InMemoryDbContextReadOnly(memoria), cache, Relogio()).HandleAsync(new ObterPosicaoEmQuery(DominioFactory.Titular(), conta, instante), Ct);
 
     private Task<Resultado<FechamentosDiariosResponse>> FechamentosAsync(DateOnly? de, DateOnly ate, int pagina = 1, int tamanho = 30) =>
-        new ObterFechamentosDiariosHandler(memoria, memoria).HandleAsync(new ObterFechamentosDiariosQuery(Fabrica.Titular(), conta, de, ate, pagina, tamanho), Ct);
+        new ObterFechamentosDiariosHandler(new InMemoryDbContextReadOnly(memoria)).HandleAsync(new ObterFechamentosDiariosQuery(DominioFactory.Titular(), conta, de, ate, pagina, tamanho), Ct);
 
     private static RelogioFixo Relogio() => new(Dia3.AddDays(1));
 }

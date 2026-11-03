@@ -1,13 +1,16 @@
+global using System.Data.Common;
 global using System;
 global using Contratos.Integracao.Lancamentos;
-global using Lancamentos.Application.Portas;
+global using Lancamentos.Application.Ports;
 global using Lancamentos.Domain.Comum;
 global using Lancamentos.Domain.Contas;
 global using Lancamentos.Domain.Lancamentos;
 global using Lancamentos.Infrastructure.Eventos;
 global using Lancamentos.Infrastructure.Persistencia;
+global using Lancamentos.Infrastructure.Persistencia.Repositories;
 global using MassTransit;
 global using Microsoft.EntityFrameworkCore.Design;
+global using Microsoft.EntityFrameworkCore.Diagnostics;
 global using Microsoft.EntityFrameworkCore.Infrastructure;
 global using Microsoft.EntityFrameworkCore.Metadata.Builders;
 global using Microsoft.EntityFrameworkCore.Migrations;

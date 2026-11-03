@@ -52,6 +52,24 @@ public sealed class CamadasTestes
         aplicacao.Referencias.ToList().ForEach(r => (new[] { $"{contexto}.Domain", "Plataforma.Mediator" }).Should().Contain(r));
     }
 
+    /// <summary>
+    /// Do EF Core, a Aplicação usa só as extensões de LINQ (EntityFrameworkQueryableExtensions: AsNoTracking e as
+    /// assíncronas), com que as Queries executam as consultas do IDbContextReadOnly. A verificação é feita no IL, pelos tipos referenciados.
+    /// </summary>
+    [Theory(DisplayName = "Aplicação usa do EF Core só as extensões assíncronas de LINQ")]
+    [MemberData(nameof(Contextos))]
+    public void Aplicacao_UsaDoEfCoreSoAsExtensoesDeLinq(string contexto)
+    {
+        var modulo = Mono.Cecil.AssemblyDefinition.ReadAssembly(Solucao.Assembly($"{contexto}.Application").Location).MainModule;
+        var doEf = modulo.GetTypeReferences()
+            .Where(t => t.Scope.Name.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal))
+            .Select(t => t.FullName)
+            .Where(t => t != "Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions")
+            .ToList();
+
+        (doEf.Count == 0).Should().BeTrue($"Tipos do EF Core usados na {contexto}.Application: {string.Join(", ", doEf)}");
+    }
+
     [Theory(DisplayName = "Aplicação não depende da infraestrutura nem da borda")]
     [MemberData(nameof(Contextos))]
     public void Aplicacao_NaoDependeDeInfraestruturaNemDaBorda(string contexto)

@@ -7,7 +7,7 @@ var postgres = builder.Configuration.ConnectionStringObrigatoria("Postgres");
 builder.Services.AdicionarInfraestruturaDePosicao(postgres, builder.Configuration.GetSection("Banco"));
 builder.Services.AdicionarMediator(typeof(ProjetarMovimentacaoCommand).Assembly);
 // O Worker só usa o cache para limpá-lo na reconstrução; sem Redis configurado, fica desligado.
-builder.Services.AdicionarCacheDeSaldos(builder.Configuration.GetConnectionString("Redis"));
+builder.Services.AdicionarSaldoCache(builder.Configuration.GetConnectionString("Redis"));
 
 if (reconstruir)
 {
@@ -19,12 +19,12 @@ if (reconstruir)
     return;
 }
 
-builder.Services.AdicionarAplicadorDeMigracoes();
+builder.Services.AdicionarMigracaoHostedService();
 builder.Services.AddHealthChecks()
     .AddNpgSql(postgres, name: "postgres", tags: [Saude.TagProntidao], timeout: TimeSpan.FromSeconds(3))
-    .AdicionarVerificacaoDeMigracoes(Saude.TagProntidao);
+    .AdicionarMigracaoHealthCheck(Saude.TagProntidao);
 
-var consumo = builder.Configuration.GetSection("Consumo").Get<OpcoesDeConsumo>() ?? new OpcoesDeConsumo();
+var consumo = builder.Configuration.GetSection("Consumo").Get<ConsumoOptions>() ?? new ConsumoOptions();
 var rabbitMq = new Uri(builder.Configuration.ConnectionStringObrigatoria("RabbitMq"));
 builder.Services.AddMassTransit(x =>
 {
@@ -33,14 +33,14 @@ builder.Services.AddMassTransit(x =>
         o.Name = "rabbitmq";
         o.Tags.Add(Saude.TagProntidao);
     });
-    x.AddConsumer<ConsumidorDeContaAberta>();
-    x.AddConsumer<ConsumidorDeMovimentacaoRegistrada>();
+    x.AddConsumer<ContaAbertaConsumer>();
+    x.AddConsumer<MovimentacaoRegistradaConsumer>();
     x.AdicionarInboxDePosicao();
     x.UsingRabbitMq((contexto, cfg) =>
     {
         cfg.Host(rabbitMq);
-        cfg.ReceiveEndpoint($"{consumo.PrefixoDasFilas}-conta-aberta", e => Configurar<ConsumidorDeContaAberta>(e, contexto));
-        cfg.ReceiveEndpoint($"{consumo.PrefixoDasFilas}-movimentacao-registrada", e => Configurar<ConsumidorDeMovimentacaoRegistrada>(e, contexto));
+        cfg.ReceiveEndpoint($"{consumo.PrefixoDasFilas}-conta-aberta", e => Configurar<ContaAbertaConsumer>(e, contexto));
+        cfg.ReceiveEndpoint($"{consumo.PrefixoDasFilas}-movimentacao-registrada", e => Configurar<MovimentacaoRegistradaConsumer>(e, contexto));
     });
 });
 
@@ -52,8 +52,8 @@ await app.RunAsync();
 
 // Retentativa por fora do Inbox: cada tentativa é uma transação nova. Esgotadas as tentativas, o MassTransit move a
 // mensagem para a fila <endpoint>_error. Um evento inválido não é tentado de novo.
-void Configurar<TConsumidor>(IRabbitMqReceiveEndpointConfigurator endpoint, IBusRegistrationContext contexto)
-    where TConsumidor : class, IConsumer
+void Configurar<TConsumer>(IRabbitMqReceiveEndpointConfigurator endpoint, IBusRegistrationContext contexto)
+    where TConsumer : class, IConsumer
 {
     endpoint.ConcurrentMessageLimit = consumo.LimiteDeMensagensConcorrentes;
     endpoint.UseMessageRetry(r =>
@@ -62,5 +62,5 @@ void Configurar<TConsumidor>(IRabbitMqReceiveEndpointConfigurator endpoint, IBus
         r.Ignore<EventoInvalidoException>();
     });
     endpoint.UsarInboxDePosicao(contexto);
-    endpoint.ConfigureConsumer<TConsumidor>(contexto);
+    endpoint.ConfigureConsumer<TConsumer>(contexto);
 }

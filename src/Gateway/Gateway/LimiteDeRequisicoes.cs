@@ -12,7 +12,7 @@ internal static class LimiteDeRequisicoes
 
     public static IServiceCollection AdicionarLimiteDeRequisicoes(this IServiceCollection servicos, IConfiguration secao)
     {
-        var opcoes = secao.Get<OpcoesDeLimite>() ?? new OpcoesDeLimite();
+        var opcoes = secao.Get<LimiteOptions>() ?? new LimiteOptions();
 
         return servicos.AddRateLimiter(o =>
         {

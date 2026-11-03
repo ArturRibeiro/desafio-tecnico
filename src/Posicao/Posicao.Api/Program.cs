@@ -5,7 +5,7 @@ var postgres = builder.Configuration.ConnectionStringObrigatoria("Postgres");
 var redis = builder.Configuration.ConnectionStringObrigatoria("Redis");
 builder.Services.AdicionarInfraestruturaDePosicao(postgres, builder.Configuration.GetSection("Banco"));
 builder.Services.AdicionarMediator(typeof(ObterPosicaoEmQuery).Assembly);
-builder.Services.AdicionarCacheDeSaldos(redis);
+builder.Services.AdicionarSaldoCache(redis);
 builder.Services.AdicionarAutenticacaoJwt(builder.Configuration.GetSection("Autenticacao"));
 
 // Toda resposta de erro em Problem Details com "codigo"; nenhuma expõe stack trace, SQL ou mensagem de exceção.
@@ -24,7 +24,7 @@ builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = contexto =>
 // As migrações são aplicadas pelo Posicao.Worker; a Api só verifica se o esquema está atualizado.
 builder.Services.AddHealthChecks()
     .AddNpgSql(postgres, name: "postgres", tags: [Saude.TagProntidao], timeout: TimeSpan.FromSeconds(3))
-    .AdicionarVerificacaoDeMigracoes(Saude.TagProntidao)
+    .AdicionarMigracaoHealthCheck(Saude.TagProntidao)
     // O cache é opcional: fora do ar, as consultas vão direto ao banco. Por isso Degraded, que mantém o 200.
     .AddRedis(redis, name: "redis", failureStatus: HealthStatus.Degraded, tags: [Saude.TagProntidao], timeout: TimeSpan.FromSeconds(3));
 

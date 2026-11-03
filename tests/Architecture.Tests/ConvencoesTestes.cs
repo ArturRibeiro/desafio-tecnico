@@ -86,6 +86,25 @@ public sealed partial class ConvencoesTestes
     /// Arquivos .cs escritos à mão em src/, tests/ e ferramentas/, sem bin/, obj/, os Usings.cs e o código que o SpecFlow
     /// gera ao lado de cada .feature (*.feature.cs).
     /// </summary>
+    /// <summary>
+    /// Classes que implementam um padrão levam o nome dele em inglês (IContaRepository, IUnitOfWork, BancoOptions...).
+    /// Com um tipo por arquivo, basta olhar os nomes dos arquivos; as migrações geradas e as pastas não entram.
+    /// </summary>
+    [Fact(DisplayName = "Nomes de padrões não são traduzidos (Repository, UnitOfWork, Options, Factory...)")]
+    public void NomesDePadroes_NaoSaoTraduzidos()
+    {
+        var traduzidos = ArquivosDeCodigo()
+            .Where(arquivo => !arquivo.Split(Path.DirectorySeparatorChar).Contains("Migracoes"))
+            .Select(Path.GetFileNameWithoutExtension)
+            .Where(nome => PadraoTraduzido().IsMatch(nome!))
+            .ToList();
+
+        (traduzidos.Count == 0).Should().BeTrue($"Tipos com o nome do padrão traduzido: {string.Join(", ", traduzidos)}");
+
+        var pastas = Directory.EnumerateDirectories(Path.Combine(Solucao.Diretorio.FullName, "src"), "Portas", SearchOption.AllDirectories).ToList();
+        (pastas.Count == 0).Should().BeTrue($"As portas ficam na pasta Ports: {string.Join(", ", pastas)}");
+    }
+
     private static IEnumerable<string> ArquivosDeCodigo() =>
         PastasDeCodigo
             .SelectMany(pasta => Directory.EnumerateFiles(Path.Combine(Solucao.Diretorio.FullName, pasta), "*.cs", SearchOption.AllDirectories))
@@ -110,4 +129,8 @@ public sealed partial class ConvencoesTestes
 
     [GeneratedRegex(@"^\s*\[(Given|When|Then)\(")]
     private static partial Regex AtributoDePasso();
+
+    /// <summary>Nomes de padrões em português que não devem aparecer no nome de um tipo.</summary>
+    [GeneratedRegex("Repositorio|UnidadeDeTrabalho|Fabrica|Tradutor|Consumidor|Opcoes|Publicador|Adaptador|Conversor|Aplicador|Falso|VerificacaoDe|SemCache|CacheDe")]
+    private static partial Regex PadraoTraduzido();
 }

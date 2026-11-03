@@ -4,9 +4,9 @@ namespace Lancamentos.Application.UseCases.Comum.Imp;
 /// Passos comuns a todos os comandos sobre uma conta, na ordem exigida pelas specs:
 /// bloquear a conta, verificar a titularidade, verificar a idempotência e só então aplicar as regras do Aggregate.
 /// </summary>
-public abstract class OperacaoNaConta(IUnidadeDeTrabalho unidade, IRepositorioDeContas contas, IRepositorioDeLancamentos lancamentos, TimeProvider relogio)
+public abstract class OperacaoNaConta(IUnitOfWork unidade, IContaRepository contas, ILancamentoRepository lancamentos, TimeProvider relogio)
 {
-    protected IRepositorioDeLancamentos Lancamentos => lancamentos;
+    protected ILancamentoRepository Lancamentos => lancamentos;
 
     protected Task<Resultado<Lancamento>> ExecutarAsync(
         TitularId titular,

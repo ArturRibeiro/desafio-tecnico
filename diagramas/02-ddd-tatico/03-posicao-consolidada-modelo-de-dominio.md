@@ -31,7 +31,7 @@ classDiagram
     }
 
     class Movimento {
-        <<Entity>>
+        <<Aggregate Root>>
         +ContaId ContaId
         +long Sequencia
         +LancamentoId LancamentoId
@@ -81,7 +81,7 @@ classDiagram
 |---|---|
 | **Aggregate Root** `FechamentoDiario` | Garante idempotência (sequência já aplicada é ignorada) e mantém os totais do dia consistentes. |
 | **Aggregate Root** `Titularidade` | Quem é o titular de cada conta, criada por `ContaAberta v1`. Responde se a conta pertence ao cliente da consulta e guarda a última sequência aplicada e o `AtualizadoAte`. |
-| **Entity** `Movimento` | Cópia de leitura de cada lançamento, usada para calcular a posição dentro de um dia. Fica pendente até a sua vez; o `Efeito` (o inverso do original, no estorno) é definido na aplicação. |
+| **Aggregate Root** `Movimento` | Cópia de leitura de cada lançamento, com Repository próprio, usada para calcular a posição dentro de um dia. Fica pendente até a sua vez; o `Efeito` (o inverso do original, no estorno) é definido na aplicação. |
 | **Domain Service** `ProjecaoDaConta` | Aplica os pendentes em ordem de sequência, parando na primeira lacuna, e abre um fechamento a cada novo dia. A reconstrução usa o mesmo serviço. |
 | **Value Objects** `Valor`, `ContaId`, `TitularId`, `DataFechamento` | Próprios deste contexto: não são compartilhados com Lançamentos (sem Shared Kernel). |
 

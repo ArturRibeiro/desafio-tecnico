@@ -5,7 +5,7 @@ namespace Posicao.Domain.Contas;
 /// Guarda também o estado da projeção da conta (última sequência aplicada e até quando os dados estão atualizados),
 /// porque ele existe antes do primeiro fechamento.
 /// </summary>
-public sealed class Titularidade
+public sealed class Titularidade : IAggregateRoot
 {
     private Titularidade()
     {

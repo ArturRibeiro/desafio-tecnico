@@ -49,7 +49,7 @@ public sealed class ValueObjectsTestes
     [Fact(DisplayName = "Movimento com sequência zero é recusado")]
     public void Movimento_SequenciaZero_ERecusado()
     {
-        var resultado = Movimento.Criar(Fabrica.NovaConta(), 0, new LancamentoId(Guid.NewGuid()), TipoMovimento.Credito, Valor.Criar(1m).Valor, Fabrica.Dia1, Fabrica.Dia1, null);
+        var resultado = Movimento.Criar(DominioFactory.NovaConta(), 0, new LancamentoId(Guid.NewGuid()), TipoMovimento.Credito, Valor.Criar(1m).Valor, DominioFactory.Dia1, DominioFactory.Dia1, null);
 
         resultado.Falha?.Codigo.Should().Be(CodigosDeFalha.MovimentoInvalido);
     }
@@ -57,11 +57,11 @@ public sealed class ValueObjectsTestes
     [Fact(DisplayName = "Movimento de estorno sem original ou de crédito com original é recusado")]
     public void Movimento_EstornoSemOriginalOuCreditoComOriginal_ERecusado()
     {
-        var conta = Fabrica.NovaConta();
+        var conta = DominioFactory.NovaConta();
         var valor = Valor.Criar(1m).Valor;
         var lancamento = new LancamentoId(Guid.NewGuid());
 
-        Movimento.Criar(conta, 1, lancamento, TipoMovimento.Estorno, valor, Fabrica.Dia1, Fabrica.Dia1, null).Sucesso.Should().BeFalse();
-        Movimento.Criar(conta, 1, lancamento, TipoMovimento.Credito, valor, Fabrica.Dia1, Fabrica.Dia1, lancamento).Sucesso.Should().BeFalse();
+        Movimento.Criar(conta, 1, lancamento, TipoMovimento.Estorno, valor, DominioFactory.Dia1, DominioFactory.Dia1, null).Sucesso.Should().BeFalse();
+        Movimento.Criar(conta, 1, lancamento, TipoMovimento.Credito, valor, DominioFactory.Dia1, DominioFactory.Dia1, lancamento).Sucesso.Should().BeFalse();
     }
 }

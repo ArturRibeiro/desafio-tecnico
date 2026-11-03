@@ -311,6 +311,15 @@ namespace Posicao.Infrastructure.Migracoes
                     b.ToTable("movimentos", (string)null);
                 });
 
+            modelBuilder.Entity("Posicao.Infrastructure.Persistencia.BloqueioDaConta", b =>
+                {
+                    b.Property<Guid>("ContaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conta_id");
+
+                    b.ToTable((string)null);
+                });
+
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
                 {
                     b.HasOne("MassTransit.EntityFrameworkCoreIntegration.OutboxState", null)

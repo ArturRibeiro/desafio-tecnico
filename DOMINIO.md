@@ -106,6 +106,22 @@ flowchart LR
 
 Um modelo único para as duas perguntas ficaria grande, lento e acoplado. Essa diferença de significado é o principal sinal de que são Bounded Contexts distintos.
 
+### 4.3 Aggregates
+
+Um Aggregate é a fronteira de consistência carregada e gravada inteira. Cada um tem um **único Repository**, e só Aggregate Root tem Repository. No código, todo Aggregate Root implementa a interface marcadora `IAggregateRoot` do seu Domain, a interface do Repository fica no Domain, junto do aggregate (`I<Aggregate>Repository`), e os testes de arquitetura verificam que cada Aggregate Root tem exatamente um Repository, com uma única implementação, e que nenhum outro Repository lê ou grava esse aggregate. Os Repositories servem às escritas: as consultas (Queries) leem sem carregar aggregates para alteração, em LINQ, pelo `IDbContextReadOnly` (`Query<T>()`).
+
+| Contexto | Aggregate Root | Repository | Fronteira de consistência |
+|---|---|---|---|
+| Lançamentos | `Conta` | `IContaRepository` | Saldo, limite, situação e sequência da conta (5.1) |
+| Lançamentos | `Lancamento` | `ILancamentoRepository` | O próprio lançamento, imutável (5.2) |
+| Posição Consolidada | `Titularidade` | `ITitularidadeRepository` | Titular e estado da projeção da conta (6.2) |
+| Posição Consolidada | `FechamentoDiario` | `IFechamentoDiarioRepository` | Totais e saldos de um dia da conta (6.1) |
+| Posição Consolidada | `Movimento` | `IMovimentoRepository` | A cópia de um lançamento recebido (6.2) |
+
+`Lancamento` e `Movimento` são aggregates próprios, e não Entities dentro de outro aggregate, porque são lidos e gravados sozinhos e têm ciclo de vida próprio. O lançamento é consultado para estornar ou para responder a uma repetição idempotente; o movimento existe, pendente, antes de qualquer fechamento. Manter cada um dentro do aggregate da conta exigiria carregar o histórico inteiro a cada operação (seção 8).
+
+A consistência entre aggregates diferentes não depende de uma coleção. Entre `Conta` e `Lancamento`, ela vem de três garantias: só a `Conta` cria lançamentos, os dois são gravados na mesma transação e a linha da conta fica bloqueada durante a operação. Em Posição Consolidada, o Domain Service `ProjecaoDaConta` aplica os movimentos aos fechamentos, e a `Titularidade` guarda a última sequência aplicada.
+
 ---
 
 ## 5. Contexto de Lançamentos
@@ -135,9 +151,9 @@ Um modelo único para as duas perguntas ficaria grande, lento e acoplado. Essa d
 5. O `TitularId` é definido na abertura e não muda. Troca de titularidade está fora do escopo.
 
 **Decisão de modelagem: o Aggregate não contém a lista de lançamentos.**
-Uma conta pode ter milhões de lançamentos, e carregá-los a cada operação seria inviável. A `Conta` mantém apenas o saldo e a versão, e **produz** um `Lancamento` a cada operação. Ambos são persistidos na **mesma transação**, o que preserva a consistência sem um Aggregate gigante.
+Uma conta pode ter milhões de lançamentos, e carregá-los a cada operação seria inviável. A `Conta` mantém apenas o saldo e a versão, e **produz** um `Lancamento` a cada operação. O `Lancamento` é um Aggregate Root próprio (4.3), e os dois são persistidos na **mesma transação**, o que preserva a consistência sem um Aggregate gigante.
 
-### 5.2 Entity `Lancamento`
+### 5.2 Aggregate Root `Lancamento`
 
 | Atributo | Descrição |
 |---|---|
@@ -156,6 +172,7 @@ Uma conta pode ter milhões de lançamentos, e carregá-los a cada operação se
 **Regras:**
 
 - É **imutável**: não possui métodos de alteração.
+- Só é criado pela `Conta`, que garante as invariantes do saldo, na mesma transação que atualiza a conta.
 - `DataCompetencia` não pode estar no futuro nem antes do início do dia corrente (UTC). Isso garante que dias já fechados na posição consolidada nunca mudem.
 - Um lançamento só pode ser estornado **uma vez**.
 - Um estorno não pode ser estornado.
@@ -256,7 +273,7 @@ Além dos fechamentos diários, o contexto guarda a **titularidade** de cada con
 
 A `Titularidade` também guarda o estado da projeção da conta: `UltimaSequenciaAplicada` e `AtualizadoAte` (instante de registro da última movimentação aplicada; antes da primeira, o da abertura). Esse estado fica nela, e não no fechamento, porque existe antes do primeiro fechamento.
 
-O contexto também guarda uma cópia de leitura de cada lançamento recebido (`Movimento`: conta, sequência, `LancamentoId`, tipo, valor, `DataCompetencia`, `DataRegistro`, `LancamentoEstornadoId` e `Efeito`). Ela é necessária para calcular a posição em um instante **dentro** de um dia, e não apenas no fim dele. Todo evento recebido vira primeiro um `Movimento`; **pendente** é o `Movimento` com sequência acima da última aplicada.
+O contexto também guarda uma cópia de leitura de cada lançamento recebido, o Aggregate Root `Movimento` (4.3): conta, sequência, `LancamentoId`, tipo, valor, `DataCompetencia`, `DataRegistro`, `LancamentoEstornadoId` e `Efeito`). Ela é necessária para calcular a posição em um instante **dentro** de um dia, e não apenas no fim dele. Todo evento recebido vira primeiro um `Movimento`; **pendente** é o `Movimento` com sequência acima da última aplicada.
 
 O `Efeito` (crédito ou débito) é definido na aplicação. O de um **estorno** é o inverso do lançamento que ele anula: o estorno de um débito soma aos créditos do dia, e o de um crédito, aos débitos. O original sempre tem sequência menor, então já foi aplicado quando o estorno chega a vez.
 
@@ -374,7 +391,7 @@ O `TitularId` é um identificador pseudônimo: sozinho não identifica a pessoa,
 | Decisão | Alternativa considerada | Motivo da escolha |
 |---|---|---|
 | Lançamentos imutáveis (somente inclusão) com estorno | Permitir edição/exclusão | Auditabilidade e possibilidade de reconstruir qualquer posição. |
-| `Conta` sem a coleção de lançamentos | Aggregate contendo todos os lançamentos | Desempenho: o Aggregate continua pequeno, independente do histórico. |
+| `Conta` sem a coleção de lançamentos, e `Lancamento` e `Movimento` como Aggregate Roots próprios | Aggregate contendo todos os lançamentos (ou movimentos), com eles como Entities internas | Desempenho: o Aggregate continua pequeno, independente do histórico. A consistência vem da transação única e do bloqueio da conta, e cada Aggregate Root tem o seu Repository, como o DDD exige (4.3). |
 | Bloqueio da linha da `Conta` (`SELECT ... FOR UPDATE`) em cada operação, com `Versao` como proteção extra | Só concorrência otimista, com retentativas | Operações na mesma conta precisam ser serializadas de qualquer forma para o saldo ficar correto. O otimista, sob pico na mesma conta, devolve conflitos ou acumula retentativas; o bloqueio dá um resultado determinístico (sucesso ou falha de negócio) e não afeta contas diferentes. |
 | `SaldoDisponivelApos` gravado em cada lançamento | Recalcular o saldo na repetição idempotente | A repetição devolve exatamente a resposta original, e o dado serve à auditoria. Gravado uma vez e nunca alterado. |
 | Saldo disponível mantido em Lançamentos | Consultar Posição Consolidada para autorizar débitos | Evita acoplamento síncrono: a autorização não pode depender de outro serviço nem de um dado eventualmente consistente. |

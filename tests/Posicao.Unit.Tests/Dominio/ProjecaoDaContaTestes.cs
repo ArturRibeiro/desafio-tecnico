@@ -3,18 +3,18 @@ namespace Posicao.Unit.Tests.Dominio;
 /// <summary>Tarefas 2.2 e 2.3: spec projecao-da-posicao (ordem, lacuna, fechamento diário e estorno).</summary>
 public sealed class ProjecaoDaContaTestes
 {
-    private static readonly DateTimeOffset Dia1 = Fabrica.Dia1;
-    private static readonly DateTimeOffset Dia3 = Fabrica.Dia1.AddDays(2);
+    private static readonly DateTimeOffset Dia1 = DominioFactory.Dia1;
+    private static readonly DateTimeOffset Dia3 = DominioFactory.Dia1.AddDays(2);
 
     [Fact(DisplayName = "Projeção aplica os movimentos em ordem de sequência, mesmo recebidos fora de ordem")]
     public void AplicaEmOrdemDeSequencia_MesmoRecebidosForaDeOrdem()
     {
-        var conta = Fabrica.NovaConta();
-        var titularidade = Fabrica.Titularidade(conta);
+        var conta = DominioFactory.NovaConta();
+        var titularidade = DominioFactory.Titularidade(conta);
         var pendentes = new[]
         {
-            Fabrica.Debito(conta, 2, 30m, Dia1.AddHours(15)),
-            Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(10)),
+            DominioFactory.Debito(conta, 2, 30m, Dia1.AddHours(15)),
+            DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(10)),
         };
 
         var resultado = ProjecaoDaConta.Aplicar(titularidade, null, pendentes, []);
@@ -30,11 +30,11 @@ public sealed class ProjecaoDaContaTestes
     [Fact(DisplayName = "Projeção para na lacuna de sequência e aplica os seguintes quando ela é preenchida")]
     public void ParaNaLacuna_EAplicaOsSeguintesQuandoElaEPreenchida()
     {
-        var conta = Fabrica.NovaConta();
-        var titularidade = Fabrica.Titularidade(conta);
-        var primeiro = ProjecaoDaConta.Aplicar(titularidade, null, [Fabrica.Credito(conta, 1, 10m, Dia1.AddHours(1))], []);
+        var conta = DominioFactory.NovaConta();
+        var titularidade = DominioFactory.Titularidade(conta);
+        var primeiro = ProjecaoDaConta.Aplicar(titularidade, null, [DominioFactory.Credito(conta, 1, 10m, Dia1.AddHours(1))], []);
         var fechamento = primeiro.NovosFechamentos.Should().ContainSingle().Subject;
-        var terceira = Fabrica.Credito(conta, 3, 30m, Dia1.AddHours(3));
+        var terceira = DominioFactory.Credito(conta, 3, 30m, Dia1.AddHours(3));
 
         var semASegunda = ProjecaoDaConta.Aplicar(titularidade, fechamento, [terceira], []);
 
@@ -44,7 +44,7 @@ public sealed class ProjecaoDaContaTestes
         fechamento.SaldoFechamento.Should().Be(10.00m);
         terceira.Efeito.Should().BeNull();
 
-        var comASegunda = ProjecaoDaConta.Aplicar(titularidade, fechamento, [terceira, Fabrica.Credito(conta, 2, 20m, Dia1.AddHours(2))], []);
+        var comASegunda = ProjecaoDaConta.Aplicar(titularidade, fechamento, [terceira, DominioFactory.Credito(conta, 2, 20m, Dia1.AddHours(2))], []);
 
         comASegunda.Aplicados.Select(m => m.Sequencia).Should().Equal([2L, 3L]);
         fechamento.SaldoFechamento.Should().Be(60.00m);
@@ -54,12 +54,12 @@ public sealed class ProjecaoDaContaTestes
     [Fact(DisplayName = "Movimento com sequência já aplicada é ignorado")]
     public void SequenciaJaAplicada_EIgnorada()
     {
-        var conta = Fabrica.NovaConta();
-        var titularidade = Fabrica.Titularidade(conta);
-        var credito = Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(1));
+        var conta = DominioFactory.NovaConta();
+        var titularidade = DominioFactory.Titularidade(conta);
+        var credito = DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(1));
         var fechamento = ProjecaoDaConta.Aplicar(titularidade, null, [credito], []).NovosFechamentos.Single();
 
-        var repetido = ProjecaoDaConta.Aplicar(titularidade, fechamento, [Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(1))], []);
+        var repetido = ProjecaoDaConta.Aplicar(titularidade, fechamento, [DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(1))], []);
 
         repetido.Aplicados.Should().BeEmpty();
         fechamento.SaldoFechamento.Should().Be(100.00m);
@@ -70,13 +70,13 @@ public sealed class ProjecaoDaContaTestes
     [Fact(DisplayName = "Troca de dia abre novo fechamento com abertura igual ao fechamento anterior")]
     public void TrocaDeDia_AbreNovoFechamentoComAberturaIgualAoFechamentoAnterior()
     {
-        var conta = Fabrica.NovaConta();
-        var titularidade = Fabrica.Titularidade(conta);
+        var conta = DominioFactory.NovaConta();
+        var titularidade = DominioFactory.Titularidade(conta);
 
         var resultado = ProjecaoDaConta.Aplicar(
             titularidade,
             null,
-            [Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(10)), Fabrica.Debito(conta, 2, 30m, Dia3.AddHours(9))],
+            [DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(10)), DominioFactory.Debito(conta, 2, 30m, Dia3.AddHours(9))],
             []);
 
         resultado.NovosFechamentos.Should().SatisfyRespectively(d1 =>
@@ -93,13 +93,13 @@ public sealed class ProjecaoDaContaTestes
     [Fact(DisplayName = "Estorno de débito conta como crédito no fechamento")]
     public void EstornoDeDebito_ContaComoCredito()
     {
-        var conta = Fabrica.NovaConta();
-        var titularidade = Fabrica.Titularidade(conta);
-        var credito = Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(1));
-        var debito = Fabrica.Debito(conta, 2, 30m, Dia1.AddHours(2));
+        var conta = DominioFactory.NovaConta();
+        var titularidade = DominioFactory.Titularidade(conta);
+        var credito = DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(1));
+        var debito = DominioFactory.Debito(conta, 2, 30m, Dia1.AddHours(2));
         var fechamento = ProjecaoDaConta.Aplicar(titularidade, null, [credito, debito], []).NovosFechamentos.Single();
 
-        var resultado = ProjecaoDaConta.Aplicar(titularidade, fechamento, [Fabrica.Estorno(conta, 3, debito, Dia1.AddHours(3))], [debito]);
+        var resultado = ProjecaoDaConta.Aplicar(titularidade, fechamento, [DominioFactory.Estorno(conta, 3, debito, Dia1.AddHours(3))], [debito]);
 
         resultado.Aplicados.Should().ContainSingle().Subject.Efeito.Should().Be(Efeito.Credito);
         fechamento.TotalCreditos.Should().Be(130.00m);
@@ -109,11 +109,11 @@ public sealed class ProjecaoDaContaTestes
     [Fact(DisplayName = "Estorno de crédito no mesmo lote conta como débito no fechamento")]
     public void EstornoDeCredito_NoMesmoLote_ContaComoDebito()
     {
-        var conta = Fabrica.NovaConta();
-        var titularidade = Fabrica.Titularidade(conta);
-        var credito = Fabrica.Credito(conta, 1, 100m, Dia1.AddHours(1));
+        var conta = DominioFactory.NovaConta();
+        var titularidade = DominioFactory.Titularidade(conta);
+        var credito = DominioFactory.Credito(conta, 1, 100m, Dia1.AddHours(1));
 
-        var resultado = ProjecaoDaConta.Aplicar(titularidade, null, [Fabrica.Estorno(conta, 2, credito, Dia1.AddHours(2)), credito], []);
+        var resultado = ProjecaoDaConta.Aplicar(titularidade, null, [DominioFactory.Estorno(conta, 2, credito, Dia1.AddHours(2)), credito], []);
 
         (resultado.Aplicados[1].Efeito).Should().Be(Efeito.Debito);
         resultado.NovosFechamentos.Single().SaldoFechamento.Should().Be(0.00m);
@@ -122,11 +122,11 @@ public sealed class ProjecaoDaContaTestes
     [Fact(DisplayName = "Estorno sem o lançamento original interrompe a projeção")]
     public void EstornoSemOriginal_Interrompe()
     {
-        var conta = Fabrica.NovaConta();
-        var titularidade = Fabrica.Titularidade(conta);
-        var desconhecido = Fabrica.Credito(conta, 9, 10m, Dia1);
+        var conta = DominioFactory.NovaConta();
+        var titularidade = DominioFactory.Titularidade(conta);
+        var desconhecido = DominioFactory.Credito(conta, 9, 10m, Dia1);
 
-        var resultado = ProjecaoDaConta.Aplicar(titularidade, null, [Fabrica.Estorno(conta, 1, desconhecido, Dia1.AddHours(1))], []);
+        var resultado = ProjecaoDaConta.Aplicar(titularidade, null, [DominioFactory.Estorno(conta, 1, desconhecido, Dia1.AddHours(1))], []);
 
         resultado.Interrupcao?.Codigo.Should().Be(CodigosDeFalha.EstornoSemOriginal);
         titularidade.UltimaSequenciaAplicada.Should().Be(0);
@@ -135,11 +135,11 @@ public sealed class ProjecaoDaContaTestes
     [Fact(DisplayName = "Movimento com competência antes do último fechamento interrompe a projeção")]
     public void CompetenciaAntesDoUltimoFechamento_Interrompe()
     {
-        var conta = Fabrica.NovaConta();
-        var titularidade = Fabrica.Titularidade(conta);
-        var fechamento = ProjecaoDaConta.Aplicar(titularidade, null, [Fabrica.Credito(conta, 1, 10m, Dia3)], []).NovosFechamentos.Single();
+        var conta = DominioFactory.NovaConta();
+        var titularidade = DominioFactory.Titularidade(conta);
+        var fechamento = ProjecaoDaConta.Aplicar(titularidade, null, [DominioFactory.Credito(conta, 1, 10m, Dia3)], []).NovosFechamentos.Single();
 
-        var resultado = ProjecaoDaConta.Aplicar(titularidade, fechamento, [Fabrica.Credito(conta, 2, 10m, Dia1)], []);
+        var resultado = ProjecaoDaConta.Aplicar(titularidade, fechamento, [DominioFactory.Credito(conta, 2, 10m, Dia1)], []);
 
         resultado.Interrupcao?.Codigo.Should().Be(CodigosDeFalha.CompetenciaForaDeOrdem);
         titularidade.UltimaSequenciaAplicada.Should().Be(1);
@@ -149,10 +149,10 @@ public sealed class ProjecaoDaContaTestes
     [Fact(DisplayName = "Reconstrução produz o mesmo resultado do processamento original")]
     public void Reconstruir_ProduzOMesmoResultadoDoProcessamentoOriginal()
     {
-        var conta = Fabrica.NovaConta();
-        var titularidade = Fabrica.Titularidade(conta);
-        var debito = Fabrica.Debito(conta, 2, 30m, Dia3);
-        Movimento[] todos = [Fabrica.Credito(conta, 1, 100m, Dia1), debito, Fabrica.Estorno(conta, 3, debito, Dia3.AddHours(1))];
+        var conta = DominioFactory.NovaConta();
+        var titularidade = DominioFactory.Titularidade(conta);
+        var debito = DominioFactory.Debito(conta, 2, 30m, Dia3);
+        Movimento[] todos = [DominioFactory.Credito(conta, 1, 100m, Dia1), debito, DominioFactory.Estorno(conta, 3, debito, Dia3.AddHours(1))];
         var original = ProjecaoDaConta.Aplicar(titularidade, null, todos, []).NovosFechamentos;
 
         var reconstruido = ProjecaoDaConta.Reconstruir(titularidade, todos).NovosFechamentos;

@@ -14,7 +14,7 @@ public static class Autenticacao
     {
         ArgumentNullException.ThrowIfNull(secao);
 
-        var opcoes = secao.Get<OpcoesDeAutenticacao>() ?? new OpcoesDeAutenticacao();
+        var opcoes = secao.Get<AutenticacaoOptions>() ?? new AutenticacaoOptions();
         if (string.IsNullOrWhiteSpace(opcoes.Emissor) || string.IsNullOrWhiteSpace(opcoes.Audiencia))
         {
             throw new InvalidOperationException("Autenticacao:Emissor e Autenticacao:Audiencia são obrigatórios.");
