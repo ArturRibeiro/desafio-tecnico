@@ -24,6 +24,6 @@ Cada tarefa termina com todos os cenários da spec passando.
 
 ## 4. Integração
 
-- [ ] 4.1 CI: conferir a suíte e o tempo dela no runner do GitHub Actions. Verificação: execução do workflow verde.
+- [x] 4.1 CI: conferir a suíte e o tempo dela no runner do GitHub Actions. Verificação: execução do workflow verde.
 - [x] 4.2 Documentação: README (tabela de testes, como rodar e como manter os cenários, Docker como pré-requisito dos testes) e ARQUITETURA.md (os itens de negócio "Implementado, sem teste automatizado" passam a apontar para o cenário que os verifica). Verificação: links resolvem.
 - [x] 4.3 Verificação final: build sem warnings, suíte inteira passando duas vezes seguidas, com os 69 cenários de negócio executados.

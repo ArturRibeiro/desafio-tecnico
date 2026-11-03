@@ -486,3 +486,6 @@ $RECYCLE.BIN/
 
 # Código gerado pelo SpecFlow a partir dos .feature
 *.feature.cs
+
+# Configuração local do Claude Code (comandos e skills do OpenSpec); não faz parte da solução
+.claude/
