@@ -2,7 +2,7 @@
 
 ## Context
 
-O repositório ainda não tem código: só a documentação ([DOMINIO.md](../../../../DOMINIO.md), [ARQUITETURA.md](../../../../ARQUITETURA.md) e `diagramas/`), um repositório git sem commits e o OpenSpec. A máquina de desenvolvimento tem os SDKs .NET 10 e o Docker 29.
+O repositório ainda não tem código: só a documentação ([DOMINIO.md](../../../../documentacao/DOMINIO.md), [ARQUITETURA.md](../../../../documentacao/ARQUITETURA.md) e `diagramas/`), um repositório git sem commits e o OpenSpec. A máquina de desenvolvimento tem os SDKs .NET 10 e o Docker 29.
 
 A arquitetura já está decidida:
 - um microserviço por Bounded Context;

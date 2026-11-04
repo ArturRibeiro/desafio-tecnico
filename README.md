@@ -1,6 +1,8 @@
 # Sistema de Movimentações Financeiras
 
-Registra créditos e débitos de contas e informa a posição consolidada (saldo) em qualquer instante. Arquitetura e decisões: [ARQUITETURA.md](ARQUITETURA.md), [DOMINIO.md](DOMINIO.md) e [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md). Trade-offs, desafios enfrentados e evolução: [ARQUITETURA 5](ARQUITETURA.md#5-trade-offs-desafios-e-evolução).
+Registra créditos e débitos de contas e informa o saldo (posição consolidada) em qualquer instante.
+
+Para saber mais: [ARQUITETURA.md](documentacao/ARQUITETURA.md) (decisões, [trade-offs](documentacao/ARQUITETURA.md#8-trade-offs-e-alternativas) e [linha do tempo](documentacao/ARQUITETURA.md#9-linha-do-tempo)), [DOMINIO.md](documentacao/DOMINIO.md) (regras de negócio e glossário) e [DESENVOLVIMENTO.md](documentacao/DESENVOLVIMENTO.md) (detalhes técnicos).
 
 ## Pré-requisitos
 
@@ -12,19 +14,21 @@ Registra créditos e débitos de contas e informa a posição consolidada (saldo
 docker compose up -d --build
 ```
 
-A primeira subida compila as imagens e leva alguns minutos. Com a porta 8080 ocupada, use outra: `GATEWAY_PORTA=8090 docker compose up -d --build` (e troque 8080 por 8090 abaixo).
+A primeira subida compila as imagens e pode levar alguns minutos. Se a porta 8080 estiver ocupada, use outra: `GATEWAY_PORTA=8090 docker compose up -d --build` (e troque 8080 por 8090 nos comandos abaixo).
 
 ## 2. Conferir
 
 ```bash
-curl http://localhost:8080/health/ready
+docker compose ps
 ```
 
-Responde `"estado":"Healthy"` quando tudo está no ar. Traces no Jaeger: `http://localhost:16686`.
+Tudo está no ar quando os serviços aparecem como `healthy`, o que leva alguns segundos depois da subida. Só o Jaeger não mostra esse estado; os traces ficam em `http://localhost:16686`.
+
+O comando `curl http://localhost:8080/health/ready` informa só a saúde do gateway: ele responde `"estado":"Healthy"` mesmo com outros serviços fora do ar.
 
 ## 3. Usar
 
-Toda chamada exige um token JWT. No ambiente local, ele vem de um emissor de desenvolvimento.
+Toda chamada exige um token de acesso (JWT). No ambiente local, ele vem de um emissor de desenvolvimento.
 
 **Emitir um token:**
 
@@ -62,9 +66,11 @@ curl -s -X POST http://localhost:8080/lancamentos/contas/$CONTA/lancamentos/$DEB
 curl -s http://localhost:8080/posicao/contas/$CONTA -H "Authorization: Bearer $TOKEN"
 ```
 
-A posição é atualizada por eventos e pode levar alguns instantes para refletir o último lançamento; o campo `atualizadoAte` mostra até onde ela já está atualizada. Cada operação exige um `Idempotency-Key` próprio: repetir a mesma chave devolve o resultado original.
+O saldo pode levar alguns instantes para refletir o último lançamento; o campo `atualizadoAte` mostra até onde ele já está atualizado. Logo depois de abrir a conta, a consulta pode responder `404` (`conta-nao-encontrada`): basta repetir em alguns segundos.
 
-Consultas por instante, fechamentos diários, erros e limites estão em [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md#detalhes-da-api).
+Cada operação precisa de um `Idempotency-Key` próprio. Repetir a mesma chave devolve o resultado original, sem duplicar a operação.
+
+Consultas por instante, fechamentos diários, erros e limites estão em [DESENVOLVIMENTO.md](documentacao/DESENVOLVIMENTO.md#detalhes-da-api).
 
 ## 4. Testar
 
@@ -72,9 +78,9 @@ Consultas por instante, fechamentos diários, erros e limites estão em [DESENVO
 dotnet test -c Release
 ```
 
-Com o Docker em execução: os testes de integração sobem PostgreSQL, RabbitMQ e Redis com Testcontainers.
+O Docker precisa estar em execução, porque os testes de integração sobem PostgreSQL, RabbitMQ e Redis em containers. Eles levam alguns minutos.
 
-Teste de carga com k6 (`carga/executar.sh`): veja [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md#teste-de-carga).
+Teste de carga com k6 (`carga/executar.sh`): veja [DESENVOLVIMENTO.md](documentacao/DESENVOLVIMENTO.md#teste-de-carga).
 
 ## 5. Parar
 
@@ -82,4 +88,4 @@ Teste de carga com k6 (`carga/executar.sh`): veja [DESENVOLVIMENTO.md](DESENVOLV
 docker compose down -v
 ```
 
-Para e remove os containers e os dados. Sem `-v`, os dados dos bancos são mantidos.
+Para e remove os containers e **apaga os dados**. Sem o `-v`, os dados dos bancos são mantidos.

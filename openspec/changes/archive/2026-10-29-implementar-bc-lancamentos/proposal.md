@@ -2,7 +2,7 @@
 
 ## Why
 
-O esqueleto da solução está pronto, mas o sistema ainda não registra nenhuma movimentação. Lançamentos é o Core Subdomain: é onde está o risco de dinheiro errado na conta do cliente, e é a fonte da verdade da qual a Posição Consolidada depende. Por isso é a primeira fatia de comportamento a ser implementada. A modelagem já está decidida em [DOMINIO.md](../../../../DOMINIO.md), seções 5 e 7.
+O esqueleto da solução está pronto, mas o sistema ainda não registra nenhuma movimentação. Lançamentos é o Core Subdomain: é onde está o risco de dinheiro errado na conta do cliente, e é a fonte da verdade da qual a Posição Consolidada depende. Por isso é a primeira fatia de comportamento a ser implementada. A modelagem já está decidida em [DOMINIO.md](../../../../documentacao/DOMINIO.md), seções 5 e 7.
 
 ## What Changes
 

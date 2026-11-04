@@ -2,7 +2,7 @@
 
 > **DDD Estratégico** · [Índice](../../ARQUITETURA.md) · Próximo: [1.2 Context Map](02-context-map.md)
 
-O domínio de movimentações financeiras se divide em três Subdomains, classificados pela importância para o negócio.
+O domínio se divide em três Subdomains, classificados pela importância para o negócio.
 
 ```mermaid
 flowchart LR
@@ -27,6 +27,6 @@ flowchart LR
 
 | Subdomain | Classificação | Estratégia |
 |---|---|---|
-| **Lançamentos** | Core | Maior investimento em modelagem e testes: é onde está o risco financeiro. |
-| **Posição Consolidada** | Supporting | Desenvolvido internamente, mas mais simples: é derivado e pode ser reconstruído. |
+| **Lançamentos** | Core | Recebe mais modelagem e testes: é onde está o risco financeiro. |
+| **Posição Consolidada** | Supporting | Feito aqui, mas mais simples: é calculado a partir dos lançamentos e pode ser reconstruído. |
 | **Identidade e Acesso** | Generic | Não é desenvolvido: usa-se um provedor de identidade pronto (JWT). |

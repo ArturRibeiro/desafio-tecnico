@@ -28,6 +28,6 @@ flowchart TB
 | Elemento | Responsabilidade |
 |---|---|
 | **Cliente** | Registra movimentações e consulta a posição consolidada. Só tem acesso às contas que lhe pertencem. |
-| **Provedor de Identidade** | Generic Subdomain: não é desenvolvido aqui, apenas integrado. |
+| **Provedor de Identidade** | Generic Subdomain: não é desenvolvido aqui, só integrado. |
 
-O enunciado não define quais canais o cliente usa (app, internet banking etc.). Por isso o diagrama mostra o Cliente falando diretamente com o sistema: qualquer canal entra como um meio de acesso, sem mudar o modelo. As premissas sobre usuários e acesso estão em [DOMINIO.md](../../DOMINIO.md#premissas).
+O enunciado não define os canais do cliente (app, internet banking etc.). Por isso o diagrama mostra o Cliente falando direto com o sistema: qualquer canal é só um meio de acesso. As premissas estão em [DOMINIO.md](../../DOMINIO.md#premissas).

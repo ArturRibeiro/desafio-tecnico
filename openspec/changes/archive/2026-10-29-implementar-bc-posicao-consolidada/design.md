@@ -12,8 +12,8 @@ Estado atual:
 
 Restrições herdadas:
 
-- A modelagem está no [DOMINIO.md](../../../../DOMINIO.md), seção 6, e no diagrama [2.3](../../../../diagramas/02-ddd-tatico/03-posicao-consolidada-modelo-de-dominio.md).
-- Os componentes estão no diagrama [2.4](../../../../diagramas/02-ddd-tatico/04-posicao-consolidada-c4-component.md).
+- A modelagem está no [DOMINIO.md](../../../../documentacao/DOMINIO.md), seção 6, e no diagrama [2.3](../../../../documentacao/diagramas/02-ddd-tatico/03-posicao-consolidada-modelo-de-dominio.md).
+- Os componentes estão no diagrama [2.4](../../../../documentacao/diagramas/02-ddd-tatico/04-posicao-consolidada-c4-component.md).
 - Nenhuma referência entre Bounded Contexts. O que vem de Lançamentos é só o projeto `Contratos.Integracao`.
 - MassTransit fica na v8.
 - O build trata warnings como erro.

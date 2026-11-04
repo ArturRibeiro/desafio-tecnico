@@ -49,7 +49,12 @@ flowchart TB
     style api fill:none,stroke:#444,stroke-dasharray:6 4
 ```
 
-O MassTransit cuida da entrega: Inbox (`InboxState`) para não processar o mesmo `eventoId` duas vezes, retentativas e fila `_error` como DLQ. Ele **não garante ordem**. Por isso a ordem é regra do domínio: a `Titularidade` guarda a última sequência aplicada, o `ProjecaoDaConta` aplica os pendentes enquanto a sequência for a próxima esperada e para na primeira lacuna, e o `FechamentoDiario` ignora uma sequência já aplicada. O lock por conta (`pg_advisory_xact_lock`) faz os eventos da mesma conta correrem em série, mesmo com várias instâncias do Worker.
+O MassTransit cuida da entrega: Inbox (`InboxState`) para não processar o mesmo `eventoId` duas vezes, novas tentativas e fila `_error` como DLQ. Ele **não garante ordem**, então a ordem é regra do domínio:
+
+- A `Titularidade` guarda a última sequência aplicada.
+- O `ProjecaoDaConta` aplica os pendentes enquanto a sequência for a próxima esperada e para quando falta uma.
+- O `FechamentoDiario` ignora uma sequência já aplicada.
+- O lock por conta (`pg_advisory_xact_lock`) faz os eventos da mesma conta correrem um de cada vez, mesmo com várias instâncias do Worker.
 
 Consumidores, endpoints e o comando `reconstruir` só conhecem o `IMediator` e os pedidos; cada comando ou consulta tem um único handler na Application.
 

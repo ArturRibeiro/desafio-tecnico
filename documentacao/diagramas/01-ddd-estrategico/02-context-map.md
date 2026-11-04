@@ -2,7 +2,7 @@
 
 > **DDD Estratégico** · [Índice](../../ARQUITETURA.md) · Anterior: [1.1 Subdomains](01-subdomains.md) · Próximo: [1.3 C4 — System Context](03-c4-system-context.md)
 
-Cada Subdomain desenvolvido vira um Bounded Context. O Context Map mostra a direção da dependência (**U** = Upstream, **D** = Downstream) e o padrão de integração em cada relação.
+Cada Subdomain desenvolvido aqui vira um Bounded Context. O mapa mostra quem depende de quem (**U** = Upstream, quem fornece; **D** = Downstream, quem depende) e como eles se integram.
 
 ```mermaid
 flowchart LR
@@ -24,5 +24,5 @@ flowchart LR
 
 | Relação | Padrão | Significado |
 |---|---|---|
-| Lançamentos → Posição Consolidada | **Published Language** | Lançamentos publica um contrato de eventos versionado. Posição Consolidada depende dele, mas não do modelo interno de Lançamentos. Não há **Shared Kernel**. |
-| Provedor de Identidade → os dois BCs | **Open Host Service** + **Conformist** | O provedor expõe um protocolo padrão (OIDC/JWT), e os BCs se adaptam a ele sem traduzi-lo. |
+| Lançamentos → Posição Consolidada | **Published Language** | Lançamentos publica um contrato de eventos com versão. Posição Consolidada depende desse contrato, não do modelo interno de Lançamentos. Não há **Shared Kernel** (código de domínio compartilhado). |
+| Provedor de Identidade → os dois BCs | **Open Host Service** + **Conformist** | O provedor usa um protocolo padrão (OIDC/JWT), e os BCs o seguem como é. |

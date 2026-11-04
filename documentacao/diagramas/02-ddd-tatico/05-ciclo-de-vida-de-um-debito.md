@@ -2,7 +2,7 @@
 
 > **DDD Tático** · [Índice](../../ARQUITETURA.md) · Anterior: [2.4 BC Posição Consolidada — C4 Component](04-posicao-consolidada-c4-component.md)
 
-Como os elementos táticos dos dois Bounded Contexts colaboram, do comando até a posição consolidada.
+O caminho de um débito pelos dois Bounded Contexts, do comando até a posição consolidada.
 
 ```mermaid
 sequenceDiagram

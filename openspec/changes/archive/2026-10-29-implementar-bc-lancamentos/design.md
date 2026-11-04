@@ -10,7 +10,7 @@ O que já existe, entregue pela change `estruturar-solucao`:
 - testes de arquitetura que leem os `.csproj`;
 - um compose com um PostgreSQL por contexto e credenciais por container.
 
-O modelo de domínio está em [DOMINIO.md](../../../../DOMINIO.md), seções 5 e 7. A motivação está em [proposal.md](proposal.md), e os comportamentos exigidos estão nas specs desta change.
+O modelo de domínio está em [DOMINIO.md](../../../../documentacao/DOMINIO.md), seções 5 e 7. A motivação está em [proposal.md](proposal.md), e os comportamentos exigidos estão nas specs desta change.
 
 Restrições:
 - .NET 10;

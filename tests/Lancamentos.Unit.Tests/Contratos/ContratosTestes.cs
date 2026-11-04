@@ -62,7 +62,7 @@ public sealed partial class ContratosTestes
     /// <summary>Lê, no DOMINIO.md, o exemplo JSON do evento e devolve os nomes dos campos.</summary>
     private static SortedSet<string> CamposDocumentados(string tipoEvento)
     {
-        var dominio = File.ReadAllText(Path.Combine(RaizDoRepositorio(), "DOMINIO.md"));
+        var dominio = File.ReadAllText(Path.Combine(RaizDoRepositorio(), "documentacao", "DOMINIO.md"));
         var exemplo = BlocosJson().Matches(dominio)
             .Select(m => m.Groups[1].Value)
             .Single(b => b.Contains($"\"tipoEvento\": \"{tipoEvento}\"", StringComparison.Ordinal));

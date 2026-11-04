@@ -5,6 +5,6 @@
 .claude/
 tests/
 openspec/
-diagramas/
+documentacao/
 ambiente/
 *.md

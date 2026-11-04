@@ -132,7 +132,7 @@ services:
       dockerfile: ferramentas/EmissorDeTokens/Dockerfile
     env_file: ambiente/desenvolvimento/autenticacao.env
 
-  # Teste de carga, fora da subida normal: carga/executar.sh (veja DESENVOLVIMENTO.md, "Teste de carga").
+  # Teste de carga, fora da subida normal: carga/executar.sh (veja documentacao/DESENVOLVIMENTO.md, "Teste de carga").
   # Chama o gateway pela rede interna e grava os resultados em carga/, com o usuário do host.
   k6:
     profiles: ["carga"]

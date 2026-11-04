@@ -2,7 +2,7 @@
 
 ## Why
 
-A arquitetura e o domínio estão documentados em [DOMINIO.md](../../../../DOMINIO.md) e [ARQUITETURA.md](../../../../ARQUITETURA.md), mas ainda não existe código. Antes de implementar regras de negócio, precisamos de uma base que já atenda aos requisitos obrigatórios do enunciado que não dependem do domínio:
+A arquitetura e o domínio estão documentados em [DOMINIO.md](../../../../documentacao/DOMINIO.md) e [ARQUITETURA.md](../../../../documentacao/ARQUITETURA.md), mas ainda não existe código. Antes de implementar regras de negócio, precisamos de uma base que já atenda aos requisitos obrigatórios do enunciado que não dependem do domínio:
 
 - código em C#;
 - compilação sem erros e sem warnings;

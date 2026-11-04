@@ -43,4 +43,7 @@ flowchart TB
     style api fill:none,stroke:#444,stroke-dasharray:6 4
 ```
 
-Os componentes **Outbox Transacional** e **Entrega do Outbox** são do MassTransit, apenas configurados (`AddEntityFrameworkOutbox` com `UseBusOutbox`). O código próprio do contexto é o **Tradutor de Eventos**, na Infraestrutura, que mantém o modelo interno separado da Published Language: Domínio e Aplicação não conhecem os contratos, e os testes de arquitetura garantem isso. Os endpoints só conhecem o `IMediator` e os comandos: o Mediator, da biblioteca técnica `Plataforma.Mediator` (compartilhada pelos dois contextos e sem pacote externo), entrega cada comando ao único handler registrado para ele, e um teste de arquitetura impede a borda de usar um handler diretamente. A **Autenticação JWT** vem da biblioteca técnica `Plataforma.Hospedagem`, reaproveitável pelos outros serviços.
+- **Outbox Transacional** e **Entrega do Outbox** são do MassTransit, só configurados (`AddEntityFrameworkOutbox` com `UseBusOutbox`).
+- **Tradutor de Eventos** é código próprio, na Infraestrutura. Ele separa o modelo interno da Published Language: Domínio e Aplicação não conhecem os contratos, e os testes de arquitetura garantem isso.
+- **Endpoints** só conhecem o `IMediator` e os comandos. O Mediator, da biblioteca `Plataforma.Mediator` (usada pelos dois contextos e sem pacote externo), entrega cada comando ao seu único handler. Um teste de arquitetura impede a borda de usar um handler direto.
+- **Autenticação JWT** vem da biblioteca `Plataforma.Hospedagem`, reaproveitável pelos outros serviços.

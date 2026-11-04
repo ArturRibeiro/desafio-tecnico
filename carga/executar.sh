@@ -2,7 +2,7 @@
 # Teste de carga contra o ambiente local (docker compose), com o ambiente já no ar.
 #   carga/executar.sh
 # Roda os quatro cenários e a verificação de consistência e grava a evidência em carga/resultados/.
-# Parâmetros dos cenários por variáveis de ambiente (veja DESENVOLVIMENTO.md, "Teste de carga").
+# Parâmetros dos cenários por variáveis de ambiente (veja documentacao/DESENVOLVIMENTO.md, "Teste de carga").
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
