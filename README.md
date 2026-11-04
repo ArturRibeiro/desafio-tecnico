@@ -74,6 +74,8 @@ dotnet test -c Release
 
 Com o Docker em execução: os testes de integração sobem PostgreSQL, RabbitMQ e Redis com Testcontainers.
 
+Teste de carga com k6 (`carga/executar.sh`): veja [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md#teste-de-carga).
+
 ## 5. Parar
 
 ```bash

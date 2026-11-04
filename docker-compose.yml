@@ -132,6 +132,18 @@ services:
       dockerfile: ferramentas/EmissorDeTokens/Dockerfile
     env_file: ambiente/desenvolvimento/autenticacao.env
 
+  # Teste de carga, fora da subida normal: carga/executar.sh (veja DESENVOLVIMENTO.md, "Teste de carga").
+  # Chama o gateway pela rede interna e grava os resultados em carga/, com o usuário do host.
+  k6:
+    profiles: ["carga"]
+    image: grafana/k6:2.3.0
+    user: "${CARGA_UID:-1000}:${CARGA_GID:-1000}"
+    working_dir: /carga
+    volumes:
+      - ./carga:/carga
+    environment:
+      ALVO: http://gateway:8080
+
 volumes:
   postgres-lancamentos:
   postgres-posicao:

@@ -491,3 +491,6 @@ $RECYCLE.BIN/
 
 # Configuração local do Claude Code (comandos e skills do OpenSpec); não faz parte da solução
 .claude/
+
+# Arquivos intermediários do teste de carga (tokens e ids das contas); os resultados ficam em carga/resultados/.
+carga/.trabalho/

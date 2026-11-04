@@ -40,7 +40,7 @@ O emissor de tokens assina com a chave HS256 de [ambiente/desenvolvimento/autent
 
 ### Tokens
 
-O `--titular` do emissor vira a claim `sub`, que identifica o dono das contas. Por padrão, o token tem os escopos `lancamentos:escrever` e `posicao:ler` e vale 60 minutos. Para mudar, use `--escopos "posicao:ler"` ou `--validade-minutos 10`.
+O `--titular` do emissor vira a claim `sub`, que identifica o dono das contas. Por padrão, o token tem os escopos `lancamentos:escrever` e `posicao:ler` e vale 60 minutos. Para mudar, use `--escopos "posicao:ler"` ou `--validade-minutos 10`. Com `--quantidade N`, emite N tokens, um por linha, para os titulares `<titular>-1` a `<titular>-N` (é o que o teste de carga usa).
 
 ### Painéis do ambiente local
 
@@ -134,6 +134,43 @@ O `Scenarios.Integration.Specs.Tests` executa, com [SpecFlow](https://github.com
 - Os arquivos `.feature` em [tests/Scenarios.Integration.Specs.Tests/Features](tests/Scenarios.Integration.Specs.Tests/Features/) têm os cenários das specs, um por spec com o nome em PascalCase (`consulta-de-posicao` vira `ConsultaDePosicao.feature`): cada requisito é uma `Rule` e cada cenário, um `Scenario` com os mesmos passos. A change do OpenSpec que cria ou altera cenários de uma spec de negócio atualiza o `.feature` dela e os passos em `Steps`.
 - O SpecFlow gera um `.feature.cs` ao lado de cada `.feature` no build; esses arquivos ficam fora do Git.
 - Um cenário com passo sem implementação falha.
+
+### Teste de carga
+
+Mede o comportamento sob carga e encontra o gargalo; não prova SLA. Roda com [k6](https://k6.io/) em container (perfil `carga` do compose, fora do CI) contra o ambiente local, e os resultados estão na [ARQUITETURA 3.3](ARQUITETURA.md#33-alta-demanda).
+
+Pré-requisitos: Docker e o ambiente no ar (`docker compose up -d --build`). No Windows, rode pelo WSL (o orquestrador é um script bash).
+
+```bash
+carga/executar.sh
+```
+
+O script emite um token por usuário virtual (o gateway limita 100 requisições a cada 10 s por titular) e roda, em sequência:
+
+| Etapa | Script | O que faz |
+|---|---|---|
+| Escrita em muitas contas | `escrita.js` | Cada usuário virtual credita e debita na sua conta, em rampa, patamar e descida |
+| Consistência | `alcance.js` | Crédito-sonda de R$ 0,01 numa amostra de contas; espera a posição aplicar a sequência da sonda e compara o saldo com o de Lançamentos |
+| Débitos concorrentes | `disputa.js` | Débitos simultâneos numa conta com saldo para metade deles; confere aceitos, recusados e o saldo final |
+| Leitura junto com escrita | `leitura.js` | Consultas de posição em paralelo com a escrita, seguidas da verificação de consistência |
+| Consolidado parado | `escrita.js` + `alcance.js` | Para o `posicao-worker`, repete a escrita, religa o worker e mede o tempo até a posição alcançar |
+
+Variáveis (no shell, antes do comando):
+
+| Variável | Padrão | Uso |
+|---|---|---|
+| `VUS` | 20 | Usuários virtuais da escrita (cenários 1 e 4) |
+| `VUS_ESCRITA` / `VUS_LEITURA` | 10 / 40 | Usuários virtuais do cenário 3 |
+| `DEBITOS` | 60 (máximo 100) | Débitos simultâneos do cenário 2 |
+| `RAMPA` / `PATAMAR` | `10s` / `30s` | Duração da subida (e da descida) e do patamar |
+| `PAUSA` / `PAUSA_LEITURA` | 0.5 / 0.2 | Segundos entre iterações de cada usuário virtual |
+| `AMOSTRA` | 20 | Contas conferidas pela verificação de consistência |
+| `LIMITE_ALCANCE` | 3600 | Segundos de espera pela posição antes de contar a conta como atrasada |
+| `TITULARES` | 200 | Tokens emitidos (precisa cobrir o maior número de usuários virtuais) |
+
+Exemplo: `VUS=50 PATAMAR=2m carga/executar.sh`.
+
+O resultado fica em [carga/resultados/](carga/resultados/): `resultados.md` com a tabela, a data e o ambiente, e o resumo bruto do k6 de cada etapa (`*.json`). Os tokens e arquivos intermediários ficam em `carga/.trabalho/` (fora do Git). Uma etapa com threshold violado (5xx, 429, divergência de saldo) continua registrada na tabela, e o script termina com erro.
 
 ## Estrutura
 
