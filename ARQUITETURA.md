@@ -73,23 +73,23 @@ A coluna **No desafio** mostra a priorização: **Implementado** está no códig
 |---|---|---|---|
 | Pico de escritas | APIs sem estado, escaláveis horizontalmente. A `Conta` não carrega o histórico, então cada operação lê e grava pouco; a disputa existe só entre operações da mesma conta. | [1.4](diagramas/01-ddd-estrategico/04-c4-container.md), [DOMINIO 8](DOMINIO.md#8-decisões-de-modelagem-e-alternativas) | Medido: [teste de carga](#resultados-do-teste-de-carga) |
 | Pico de consultas | `Posicao.Api` escala separada da escrita. A posição é o fechamento do dia anterior somado aos movimentos do dia, sem varrer o histórico; saldos de abertura definitivos vêm do cache. | [DOMINIO 6.3](DOMINIO.md#63-cálculo-da-posição-em-um-instante) | Medido: [teste de carga](#resultados-do-teste-de-carga) |
-| Rajada de eventos | A fila amortece o pico; o `Posicao.Worker` escala pelo número de instâncias e pela concorrência do consumer (`Consumo__LimiteDeMensagensConcorrentes`). | [1.4](diagramas/01-ddd-estrategico/04-c4-container.md) | Medido: [teste de carga](#resultados-do-teste-de-carga); o gargalo é a entrega do Outbox, antes da fila |
+| Rajada de eventos | A fila amortece o pico; o `Posicao.Worker` escala pelo número de instâncias e pela concorrência do consumer (`Consumo__LimiteDeMensagensConcorrentes`). | [1.4](diagramas/01-ddd-estrategico/04-c4-container.md) | Medido: [teste de carga](#resultados-do-teste-de-carga); a entrega do Outbox, gargalo encontrado na primeira medição, foi corrigida e medida de novo |
 | Cliente abusivo ou sobrecarga | Rate limiting por cliente no API Gateway (janela fixa por titular de token válido, ou por IP), respondendo `429` com `Retry-After`. O limite vale por instância do gateway. | [1.4](diagramas/01-ddd-estrategico/04-c4-container.md) | Implementado, sem teste automatizado |
 | Crescimento do volume de dados | Particionamento da tabela de lançamentos por data e réplicas de leitura para a posição consolidada. | — | Documentar |
 
 #### Resultados do teste de carga
 
-Medição de 03/11/2026 com [k6](https://k6.io/), num notebook com Intel Core i5-6400 (4 núcleos), 15 GB de memória e Docker 29.9.2, com todos os containers e o próprio k6 na mesma máquina. Para reproduzir: `carga/executar.sh`, com o ambiente no ar ([DESENVOLVIMENTO](DESENVOLVIMENTO.md#teste-de-carga)). Tabela gerada pelo script e resumos brutos do k6 em [carga/resultados/](carga/resultados/resultados.md).
+Medição de 04/11/2026 com [k6](https://k6.io/), num notebook com Intel Core i5-6400 (4 núcleos), 15 GB de memória e Docker 29.9.2, com todos os containers e o próprio k6 na mesma máquina. Para reproduzir: `carga/executar.sh`, com o ambiente no ar ([DESENVOLVIMENTO](DESENVOLVIMENTO.md#teste-de-carga)). Tabela gerada pelo script e resumos brutos do k6 em [carga/resultados/](carga/resultados/resultados.md).
 
 | Cenário | Usuários virtuais | Duração | Vazão (req/s) | Latência p50 | Latência p95 | Erros (5xx) | Observação |
 |---|---|---|---|---|---|---|---|
-| Escrita em muitas contas | 20 | 50 s | 55.9 | 27 ms | 86 ms | 0 | 2824 créditos e débitos em 20 contas; 0 respostas 429 |
-| Consistência ao final da escrita | 20 | 1319 s | — | 1319 s | 1319 s | 0 | latências = tempo até a posição aplicar o último lançamento da conta; 20 contas conferidas, 0 divergências de saldo; todas alcançaram em 1319 s |
-| Débitos concorrentes na mesma conta | 60 | 1 s | 83.7 | 536 ms | 659 ms | 0 | 30 aceitos e 30 recusados por saldo, de 60 simultâneos (esperados 30 aceitos); saldo final correto. Serializados de propósito |
-| Leitura junto com escrita | 50 | 97 s | 73.8 | 15 ms | 71 ms | 0 | latência e vazão das consultas, com 40 VUs de leitura e 10 de escrita; escrita no mesmo período: p95 67 ms |
-| Consistência ao final da leitura | 20 | 725 s | — | 724 s | 725 s | 0 | latências = tempo até a posição aplicar o último lançamento da conta; 20 contas conferidas, 0 divergências de saldo; todas alcançaram em 725 s |
-| Escrita com o consolidado parado | 20 | 50 s | 56.1 | 29 ms | 85 ms | 0 | 2814 créditos e débitos em 20 contas; 0 respostas 429 |
-| Alcance depois de religar o consolidado | 20 | 1322 s | — | 1322 s | 1322 s | 0 | latências = tempo até a posição aplicar o último lançamento da conta; 20 contas conferidas, 0 divergências de saldo; todas alcançaram em 1322 s |
+| Escrita em muitas contas | 20 | 52 s | 56.6 | 13 ms | 85 ms | 0 | 2930 créditos e débitos em 20 contas; 0 respostas 429 |
+| Consistência ao final da escrita | 20 | 2 s | — | 1894 ms | 1895 ms | 0 | latências = tempo até a posição aplicar o último lançamento da conta; 20 contas conferidas, 0 divergências de saldo; todas alcançaram em 1895 ms |
+| Débitos concorrentes na mesma conta | 60 | 1 s | 74.5 | 667 ms | 761 ms | 0 | 30 aceitos e 30 recusados por saldo, de 60 simultâneos (esperados 30 aceitos); saldo final correto. Serializados de propósito |
+| Leitura junto com escrita | 50 | 52 s | 142.8 | 11 ms | 48 ms | 0 | latência e vazão das consultas, com 40 VUs de leitura e 10 de escrita; escrita no mesmo período: p95 246 ms |
+| Consistência ao final da leitura | 20 | 1 s | — | 1061 ms | 1062 ms | 0 | latências = tempo até a posição aplicar o último lançamento da conta; 20 contas conferidas, 0 divergências de saldo; todas alcançaram em 1063 ms |
+| Escrita com o consolidado parado | 20 | 51 s | 56.6 | 23 ms | 77 ms | 0 | 2862 créditos e débitos em 20 contas; 0 respostas 429 |
+| Alcance depois de religar o consolidado | 20 | 21 s | — | 21 s | 21 s | 0 | latências = tempo até a posição aplicar o último lançamento da conta; 20 contas conferidas, 0 divergências de saldo; todas alcançaram em 21 s |
 
 **Os números servem de referência e para encontrar o gargalo, não como capacidade de produção.** O enunciado não define metas numéricas, e uma máquina só com todos os serviços disputando 4 núcleos não representa um ambiente de produção.
 
@@ -97,10 +97,24 @@ O que a medição mostra:
 
 - **Lançamentos responde sob carga e não depende da Posição.** A escrita fica com p95 abaixo de 90 ms, sem `5xx` nem `429`, e não muda com o `posicao-worker` parado.
 - **Os débitos concorrentes ficam corretos.** Dos 60 simultâneos numa conta com saldo para 30, exatamente 30 são aceitos, e o saldo final é zero. A latência maior é a fila do `SELECT ... FOR UPDATE`, esperada.
-- **A consulta mantém a latência com escrita em paralelo** (p95 abaixo de 75 ms), e a escrita no mesmo período também.
+- **A consulta mantém a latência com escrita em paralelo** (p95 abaixo de 50 ms). A escrita no mesmo período teve p95 de 246 ms nessa execução; duas repetições só desse cenário, fora da evidência versionada, deram 76 e 86 ms, o que aponta para um pico isolado numa máquina compartilhada.
 - **Nenhuma divergência de saldo** nas três verificações: em cada conta da amostra, a posição, ao aplicar a última sequência, tem o mesmo saldo de Lançamentos.
+- **A posição acompanha a escrita.** Ela alcança em menos de 2 s depois da carga e em 21 s depois de religar o consolidado, com quase 2.900 operações acumuladas.
 
-**Gargalo observado: a entrega do Outbox de Lançamentos.** Cerca de 2.800 operações em 50 s levaram uns 22 minutos para chegar à posição: o Outbox entrega ao RabbitMQ perto de 2 eventos por segundo, enquanto a escrita gera mais de 50. O `posicao-worker` não é o limite: com os eventos na fila, ele os consome em dezenas por segundo, e com o sistema ocioso um lançamento chega à posição em dezenas de milissegundos. A entrega usa a configuração padrão do MassTransit (intervalo de varredura e tamanho do lote). O efeito para o cliente é o atraso em `atualizadoAte`, sem perda nem inconsistência; o ajuste da entrega está na [evolução](#53-evolução).
+**Gargalo encontrado e resolvido: a entrega do Outbox de Lançamentos.** Na primeira medição, cerca de 2.800 operações em 50 s levaram uns 22 minutos para chegar à posição, porque o Outbox entregava ao RabbitMQ perto de 2 eventos por segundo. A causa era o isolamento `RepeatableRead`, padrão da entrega do MassTransit: ciclos de entrega concorrentes falhavam por serialização (`40001`, 87 erros numa escrita de 20 s) e esperavam a retentativa, de 7 s a 30 s. A reserva de cada mensagem já é exclusiva (`FOR UPDATE SKIP LOCKED`), então a correção foi usar `ReadCommitted` na entrega, sem mudar as garantias nem o intervalo de varredura.
+
+Comparação com os mesmos cenários, parâmetros e máquina ([resultados de antes](carga/resultados/antes-ajuste-do-outbox/resultados.md) e [de depois](carga/resultados/resultados.md)):
+
+| Medida | Antes (03/11) | Depois (04/11) |
+|---|---|---|
+| Posição alcança depois da escrita | 1319 s | 1,9 s |
+| Posição alcança depois da leitura com escrita | 725 s | 1,1 s |
+| Posição alcança depois de religar o consolidado | 1322 s | 21 s |
+| Escrita em muitas contas: vazão e p95 | 55,9 req/s e 86 ms | 56,6 req/s e 85 ms |
+| Escrita com o consolidado parado: vazão e p95 | 56,1 req/s e 85 ms | 56,6 req/s e 77 ms |
+| Erros `40001` no log de `lancamentos-api` durante a carga | cerca de 1.500 em 3 horas de carga | 0 |
+
+Depois da correção não há erros `5xx` nem divergências, e as mensagens pendentes no Outbox terminam em zero. A vazão de consultas da linha de leitura (73,8 para 142,8 req/s) **não é ganho**: ela é calculada sobre a duração total, e antes o preparo do cenário gastava uns 45 s esperando a projeção. O número de consultas é quase o mesmo (7.131 e 7.409).
 
 ### 3.4 Observabilidade
 
@@ -189,6 +203,7 @@ O que ficou simples de propósito, com o caminho para evoluir:
 | **Fazer as convenções valerem com o tempo.** Uma regra só documentada se perde. | Testes de arquitetura para cada convenção, e cada regra provada com um teste de mutação (o código que a viola precisa fazer o teste falhar). Assim apareceu que o NetArchTest não enxergava o acesso a um `DbSet`: a verificação passou a ler o IL compilado. |
 | **Licença do MassTransit.** A v9 passou a ter licença comercial. | Fixado na v8 (Apache 2.0), com a versão principal verificada por teste; a decisão fica registrada para reavaliação em produção. |
 | **Build verde na máquina, vermelho no CI.** Uma regra genérica do `.gitignore` (`[Ll]ogs/`) ignorava uma pasta de código dos testes. | Exceção no `.gitignore` e validação a partir de um clone limpo, como o CI faz. |
+| **Posição 22 minutos atrás da escrita.** O teste de carga mostrou a entrega do Outbox perto de 2 eventos por segundo, sem nenhum erro para o cliente. | A contagem de erros `40001` no log confirmou a causa antes de qualquer ajuste. O isolamento `ReadCommitted` na entrega bastou, e a nova medição comprovou ([3.3](#resultados-do-teste-de-carga)). |
 
 ### 5.3 Evolução
 
@@ -200,7 +215,6 @@ Em ordem de prioridade. Os itens vêm das colunas **Documentar** das seções 3 
 - WAF à frente do gateway (regras OWASP Top 10) e proteção contra DDoS do provedor de nuvem, somados ao rate limiting que já existe.
 - Métricas e alertas da integração: mensagens pendentes no Outbox, profundidade da fila, mensagens na `_error` e atraso da posição ([3.4](#34-observabilidade)).
 - Health check passivo do YARP como circuit breaker ([3.2](#32-indisponibilidade-parcial)) e privilégio mínimo no banco ([4.3](#43-integridade-e-auditoria)).
-- Ajustar a entrega do Outbox de Lançamentos (intervalo de varredura e tamanho do lote), o gargalo medido no teste de carga, e medir de novo ([3.3](#resultados-do-teste-de-carga)).
 
 **2. Com o crescimento: volume e operação**
 
